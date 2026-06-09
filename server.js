@@ -5,6 +5,30 @@ const { spawn } = require('child_process');
 const ffmpegPath = require('ffmpeg-static');
 const https = require('https');
 
+// Intercept and collect console logs in-memory for Render diagnostics
+const debugLogs = [];
+const originalLog = console.log;
+const originalError = console.error;
+const originalWarn = console.warn;
+
+console.log = (...args) => {
+  debugLogs.push(`[LOG] [${new Date().toISOString()}] ${args.join(' ')}`);
+  if (debugLogs.length > 300) debugLogs.shift();
+  originalLog.apply(console, args);
+};
+
+console.error = (...args) => {
+  debugLogs.push(`[ERROR] [${new Date().toISOString()}] ${args.join(' ')}`);
+  if (debugLogs.length > 300) debugLogs.shift();
+  originalError.apply(console, args);
+};
+
+console.warn = (...args) => {
+  debugLogs.push(`[WARN] [${new Date().toISOString()}] ${args.join(' ')}`);
+  if (debugLogs.length > 300) debugLogs.shift();
+  originalWarn.apply(console, args);
+};
+
 const app = express();
 const PORT = process.env.PORT || 3001; // Support Render's dynamic port assignment
 const CACHE_DIR = path.join(__dirname, 'hls-cache');
@@ -33,6 +57,16 @@ try {
   fs.mkdirSync(CACHE_DIR, { recursive: true });
 } catch (err) {
   console.error('[HLS Backend] Failed to create cache dir:', err.message);
+}
+
+// Ensure FFmpeg binary has execute permissions on Linux/Unix systems (critical for Render deployment)
+if (process.platform !== 'win32') {
+  try {
+    fs.chmodSync(ffmpegPath, 0o755);
+    console.log('[HLS Backend] Successfully ensured execute permissions on ffmpeg static binary');
+  } catch (err) {
+    console.warn('[HLS Backend] Failed to adjust permissions on ffmpeg binary:', err.message);
+  }
 }
 
 // Map to track active streams: hash -> { process, lastAccessed, dir, exited }
@@ -98,6 +132,11 @@ function startTranscoding(hash, url, duration) {
     console.error(`[HLS Backend] FFmpeg process for ${hash} error:`, err.message);
   });
 
+  // Log stderr details to help diagnose cloud audio fetching issues
+  ffmpegProcess.stderr.on('data', (data) => {
+    console.error(`[FFmpeg stderr ${hash}]: ${data.toString().trim()}`);
+  });
+
   // INSTANT VOD MANIFEST GENERATION: Write the complete HLS manifest immediately if not present
   if (!fs.existsSync(playlistPath)) {
     const segmentDuration = 6;
@@ -141,6 +180,12 @@ app.get('/', (req, res) => {
     cors: 'enabled',
     version: '1.0.1'
   });
+});
+
+// Route to expose captured in-memory debug logs
+app.get('/debug-logs', (req, res) => {
+  res.setHeader('Content-Type', 'text/plain');
+  res.send(debugLogs.join('\n'));
 });
 
 // Master Playlist endpoint
