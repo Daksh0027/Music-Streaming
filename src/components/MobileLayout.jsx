@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Home, Search, Library, Pause, Play, SkipBack, SkipForward, Heart, Volume2, VolumeX, Music, Plus } from 'lucide-react'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { useUser } from '@clerk/clerk-react'
+import PlaylistDialog from './PlaylistDialog'
 
 const formatTime = (seconds) => {
   if (isNaN(seconds) || seconds === null) return '0:00'
@@ -38,6 +39,7 @@ export default function MobileLayout({
   children
 }) {
   const [playerExpanded, setPlayerExpanded] = useState(false)
+  const [dialogOpen, setDialogOpen] = useState(false)
   const { user, isSignedIn } = useUser()
 
   const isLiked = currentTrack ? likedTrackIds.includes(currentTrack.id) : false
@@ -59,7 +61,13 @@ export default function MobileLayout({
   ]
 
   return (
-    <div className="mobile-app-root">
+    <>
+      <PlaylistDialog
+        isOpen={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        onCreate={(name) => createPlaylist(name)}
+      />
+      <div className="mobile-app-root">
       {/* Main content area */}
       <div className="mobile-content">
         {/* Mobile top header */}
@@ -128,10 +136,7 @@ export default function MobileLayout({
               <button
                 className="mobile-pill active"
                 style={{ padding: '6px 14px' }}
-                onClick={() => {
-                  const name = prompt('Enter playlist name:')
-                  if (name?.trim()) createPlaylist(name.trim())
-                }}
+                onClick={() => setDialogOpen(true)}
               >
                 + Create
               </button>
@@ -194,10 +199,7 @@ export default function MobileLayout({
                 <div style={{ textAlign: 'center', color: '#b3b3b3', padding: '40px 0', fontSize: 14 }}>
                   <p style={{ marginBottom: 12 }}>No playlists yet</p>
                   <button
-                    onClick={() => {
-                      const name = prompt('Enter playlist name:')
-                      if (name?.trim()) createPlaylist(name.trim())
-                    }}
+                    onClick={() => setDialogOpen(true)}
                     style={{ background: '#fff', color: '#000', border: 'none', padding: '10px 20px', borderRadius: 20, fontWeight: 700, cursor: 'pointer', fontSize: 13 }}
                   >
                     Create your first playlist
@@ -369,5 +371,6 @@ export default function MobileLayout({
         </div>
       )}
     </div>
+    </>
   )
 }

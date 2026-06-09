@@ -2129,4 +2129,174 @@ button:active {
   opacity: 1 !important;
 }
 
+/* ===== Playlist Creation Dialog ===== */
+.pdialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  z-index: 9000;
+  animation: pdialog-fade-in 0.15s ease;
+}
 
+.pdialog {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 9001;
+  width: min(420px, calc(100vw - 32px));
+  background: #282828;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.7);
+  animation: pdialog-slide-up 0.18s cubic-bezier(0.3, 0, 0, 1);
+  overflow: hidden;
+}
+
+@keyframes pdialog-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes pdialog-slide-up {
+  from { opacity: 0; transform: translate(-50%, calc(-50% + 16px)); }
+  to   { opacity: 1; transform: translate(-50%, -50%); }
+}
+
+/* Dialog header */
+.pdialog-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 20px 0 20px;
+}
+
+.pdialog-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1db954, #19e68c);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.pdialog-title {
+  font-size: 17px;
+  font-weight: 800;
+  color: #fff;
+  flex: 1;
+  margin: 0;
+}
+
+.pdialog-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.07);
+  border: none;
+  color: #b3b3b3;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+  flex-shrink: 0;
+}
+
+.pdialog-close:hover {
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+}
+
+/* Dialog body / form */
+.pdialog-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdialog-label {
+  font-size: 12px;
+  font-weight: 700;
+  color: #b3b3b3;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.pdialog-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 15px;
+  font-weight: 500;
+  color: #fff;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.pdialog-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.pdialog-input:focus {
+  border-color: var(--spotify-green);
+  background: rgba(255, 255, 255, 0.09);
+}
+
+/* Action buttons */
+.pdialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.pdialog-btn-cancel {
+  padding: 10px 20px;
+  border-radius: 20px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.pdialog-btn-cancel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.pdialog-btn-create {
+  padding: 10px 24px;
+  border-radius: 20px;
+  background: var(--spotify-green);
+  border: none;
+  color: #000;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s, transform 0.1s;
+}
+
+.pdialog-btn-create:hover:not(:disabled) {
+  background: var(--spotify-green-hover);
+  transform: scale(1.03);
+}
+
+.pdialog-btn-create:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
