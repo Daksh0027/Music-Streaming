@@ -33,6 +33,9 @@ const app = express();
 const PORT = process.env.PORT || 3001; // Support Render's dynamic port assignment
 const CACHE_DIR = path.join(__dirname, 'hls-cache');
 
+// We keep a reference to the port so startTranscoding can build local proxy URLs
+let ACTUAL_PORT = PORT;
+
 // Enable CORS for all cross-origin requests
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -133,14 +136,25 @@ function startTranscoding(hash, url, duration) {
     }
   }
 
+  // Build a local proxy URL so FFmpeg fetches audio through this server's own /stream route.
+  // JioSaavn CDN (aac.saavncdn.com) blocks requests from Render's US data-centre IPs, but
+  // the frontend browser can reach it fine. The /stream route proxies the request using
+  // Node's https module which has no such restrictions from the server side — and more
+  // importantly, it forwards the original headers that the CDN expects.
+  let ffmpegInputUrl = url;
+  try {
+    const parsedUrl = new URL(url);
+    // Route through our own local /stream proxy: http://127.0.0.1:PORT/stream/hostname/path?query
+    const proxiedPath = parsedUrl.pathname + parsedUrl.search;
+    ffmpegInputUrl = `http://127.0.0.1:${ACTUAL_PORT}/stream/${parsedUrl.hostname}${proxiedPath}`;
+    console.log(`[HLS Backend] Routing FFmpeg through local proxy: ${ffmpegInputUrl}`);
+  } catch (e) {
+    console.warn(`[HLS Backend] Could not parse URL for proxying, using direct: ${e.message}`);
+  }
+
   // Spawn ffmpeg to output segment files. We output to an internal dummy playlist.
-  // -reconnect flags allow FFmpeg to follow CDN redirects and recover from transient network drops
   const ffmpegProcess = spawn(ffmpegPath, [
-    '-reconnect', '1',
-    '-reconnect_streamed', '1',
-    '-reconnect_delay_max', '5',
-    '-user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-    '-i', url,
+    '-i', ffmpegInputUrl,
     '-c:a', 'aac',
     '-b:a', '128k',
     '-vn',
@@ -372,9 +386,23 @@ app.get(/^\/stream\/([^\/]+)\/(.+)$/, (req, res) => {
   const targetPath = req.url.replace(/^\/stream\/[^\/]+\//, '');
   const targetUrl = `https://${hostname}/${targetPath}`;
 
-  const headers = { ...req.headers };
-  // Remove host to prevent SSL mismatches
-  delete headers.host;
+  // Always inject browser-like headers so JioSaavn CDN doesn't block the request.
+  // When FFmpeg routes through here it sends minimal headers, which CDNs reject.
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': '*/*',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': `https://${hostname}/`,
+    'Origin': `https://${hostname}`,
+    'Connection': 'keep-alive',
+  };
+
+  // Forward range header if present (needed for browser seek support)
+  if (req.headers['range']) {
+    headers['Range'] = req.headers['range'];
+  }
+
+  console.log(`[HLS Backend] Proxying: ${targetUrl}`);
 
   const options = {
     method: 'GET',
@@ -389,7 +417,7 @@ app.get(/^\/stream\/([^\/]+)\/(.+)$/, (req, res) => {
   });
 
   proxyReq.on('error', (err) => {
-    console.error('[HLS Backend] Stream proxy error:', err.message);
+    console.error(`[HLS Backend] Stream proxy error for ${targetUrl}:`, err.message);
     if (!res.headersSent) {
       res.status(500).send('Stream proxy error');
     }
@@ -424,5 +452,6 @@ setInterval(() => {
 }, 10000);
 
 app.listen(PORT, () => {
+  ACTUAL_PORT = PORT; // confirm the port after server starts
   console.log(`[HLS Backend] Dynamic HLS transcoding server running on port ${PORT}`);
 });
