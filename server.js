@@ -133,6 +133,16 @@ function getHash(str) {
   return Math.abs(hash).toString(16);
 }
 
+// Root endpoint to verify server status and CORS headers
+app.get('/', (req, res) => {
+  res.json({
+    status: 'running',
+    service: 'HLS Transcoding Backend',
+    cors: 'enabled',
+    version: '1.0.1'
+  });
+});
+
 // Master Playlist endpoint
 app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
   const { hash } = req.params;
