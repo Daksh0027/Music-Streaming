@@ -103,10 +103,7 @@ export default function App() {
   }
 
   // Pre-loaded initial tracks mapped from TRACKS_DATA as safe fallback context
-  const fallbackQueue = TRACKS_DATA.map(t => ({
-    ...t,
-    rawArtists: { primary: [{ id: '1274170', name: t.artist }] } // standard Drake/Doja Cat mappings
-  }))
+  // Removed fallbackQueue mock data as per cleanup plan
 
   // Global Audio playback states
   const [currentTrack, setCurrentTrack] = useState(null)
@@ -151,7 +148,7 @@ export default function App() {
   // Liked Tracks States
   const [likedTrackIds, setLikedTrackIds] = useState([])
   const [likedTracks, setLikedTracks] = useState([])
-  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true)
+  const isRightSidebarOpen = true
 
   // Supabase Custom Playlists States
   const [playlists, setPlaylists] = useState([])
@@ -175,8 +172,6 @@ export default function App() {
         return
       }
 
-      console.log("[Supabase Sync] Starting fetch for user ID:", user.id);
-
       // 1. Fetch Liked Tracks (Isolated Try/Catch)
       try {
         const { data: likedData, error: likedError } = await supabase
@@ -191,7 +186,6 @@ export default function App() {
           const tracks = likedData.map(item => item.track_metadata)
           setLikedTrackIds(ids)
           setLikedTracks(tracks)
-          console.log("[Supabase Sync] Successfully loaded liked songs count:", tracks.length);
         }
       } catch (err) {
         console.error("[Supabase Exception] Error loading liked tracks:", err);
@@ -208,7 +202,6 @@ export default function App() {
           console.error("[Supabase Error] Failed loading playlists:", playlistsError.message, playlistsError.details, playlistsError.code);
         } else if (playlistsData) {
           setPlaylists(playlistsData)
-          console.log("[Supabase Sync] Successfully loaded playlists count:", playlistsData.length);
         }
       } catch (err) {
         console.error("[Supabase Exception] Error loading playlists:", err);
@@ -898,7 +891,7 @@ export default function App() {
   }
 
   const handleToggleRightSidebar = () => {
-    if (isRightSidebarOpen && rightSidebarTab === 'nowplaying') {
+    if (rightSidebarTab === 'nowplaying') {
       setIsRightSidebarOpen(false)
     } else {
       setIsRightSidebarOpen(true)
@@ -907,7 +900,7 @@ export default function App() {
   }
 
   const handleQueueClick = () => {
-    if (isRightSidebarOpen && rightSidebarTab === 'queue') {
+    if (rightSidebarTab === 'queue') {
       setIsRightSidebarOpen(false)
     } else {
       setIsRightSidebarOpen(true)
@@ -1221,7 +1214,7 @@ export default function App() {
           addTrackToPlaylist={addTrackToPlaylist}
           removeTrackFromPlaylist={removeTrackFromPlaylist}
         />
-        {isRightSidebarOpen && (
+        (
           <RightSidebar 
             currentTrack={currentTrack}
             isPlaying={isPlaying}
@@ -1258,7 +1251,7 @@ export default function App() {
         shuffle={shuffle}
         repeat={repeat}
         likedTrackIds={likedTrackIds}
-        isRightSidebarOpen={isRightSidebarOpen}
+
         rightSidebarTab={rightSidebarTab}
         onPlayPause={handlePlayPause}
         onNext={handleNext}
