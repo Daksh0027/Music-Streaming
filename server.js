@@ -5,29 +5,7 @@ const { spawn } = require('child_process');
 const ffmpegPath = require('ffmpeg-static');
 const https = require('https');
 
-// Intercept and collect console logs in-memory for Render diagnostics
-const debugLogs = [];
-const originalLog = console.log;
-const originalError = console.error;
-const originalWarn = console.warn;
 
-console.log = (...args) => {
-  debugLogs.push(`[LOG] [${new Date().toISOString()}] ${args.join(' ')}`);
-  if (debugLogs.length > 300) debugLogs.shift();
-  originalLog.apply(console, args);
-};
-
-console.error = (...args) => {
-  debugLogs.push(`[ERROR] [${new Date().toISOString()}] ${args.join(' ')}`);
-  if (debugLogs.length > 300) debugLogs.shift();
-  originalError.apply(console, args);
-};
-
-console.warn = (...args) => {
-  debugLogs.push(`[WARN] [${new Date().toISOString()}] ${args.join(' ')}`);
-  if (debugLogs.length > 300) debugLogs.shift();
-  originalWarn.apply(console, args);
-};
 
 const app = express();
 const PORT = process.env.PORT || 3001; // Support Render's dynamic port assignment
@@ -246,11 +224,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Route to expose captured in-memory debug logs
-app.get('/debug-logs', (req, res) => {
-  res.setHeader('Content-Type', 'text/plain');
-  res.send(debugLogs.join('\n'));
-});
+
 
 // Master Playlist endpoint
 app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
