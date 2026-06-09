@@ -3,10 +3,23 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const ffmpegPath = require('ffmpeg-static');
-const cors = require('cors');
+const https = require('https');
+
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001; // Support Render's dynamic port assignment
 const CACHE_DIR = path.join(__dirname, 'hls-cache');
+
+// Enable CORS for all cross-origin requests
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
+  res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,Authorization,range');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 // Ensure cache directory exists and is clean on startup
 if (fs.existsSync(CACHE_DIR)) {
@@ -202,6 +215,38 @@ app.get('/hls/:hash/:file', async (req, res) => {
   } else {
     res.status(404).send('File not found');
   }
+});
+
+// Stream proxy route to pipe direct progressive streams under same-origin rules with seek/range headers
+app.get(/^\/stream\/([^\/]+)\/(.+)$/, (req, res) => {
+  const hostname = req.params[0];
+  const targetPath = req.url.replace(/^\/stream\/[^\/]+\//, '');
+  const targetUrl = `https://${hostname}/${targetPath}`;
+
+  const headers = { ...req.headers };
+  // Remove host to prevent SSL mismatches
+  delete headers.host;
+
+  const options = {
+    method: 'GET',
+    headers: headers
+  };
+
+  const proxyReq = https.request(targetUrl, options, (proxyRes) => {
+    const resHeaders = { ...proxyRes.headers };
+    resHeaders['Access-Control-Allow-Origin'] = '*';
+    res.writeHead(proxyRes.statusCode, resHeaders);
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (err) => {
+    console.error('[HLS Backend] Stream proxy error:', err.message);
+    if (!res.headersSent) {
+      res.status(500).send('Stream proxy error');
+    }
+  });
+
+  req.pipe(proxyReq);
 });
 
 // Periodic Garbage Collector for inactive streams (runs every 10 seconds)

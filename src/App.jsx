@@ -62,6 +62,7 @@ export default function App() {
 
   // Constants
   const API_BASE = 'https://jiosaavn-api.daksh-api.workers.dev'
+  const BACKEND_BASE = import.meta.env.DEV ? '' : 'https://music-streaming-m41v.onrender.com'
 
   // Standard Mapper Utility inside App
   const mapApiSongToTrack = (song) => {
@@ -704,7 +705,7 @@ export default function App() {
     }
 
     const hash = getHash(currentTrack.audioUrl)
-    const playlistUrl = `/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}`
+    const playlistUrl = `${BACKEND_BASE}/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}`
 
     if (Hls.isSupported()) {
       const hls = new Hls()
@@ -738,7 +739,7 @@ export default function App() {
       // Direct progressive stream proxy fallback
       try {
         const urlObj = new URL(currentTrack.audioUrl)
-        audioRef.current.src = `/stream/${urlObj.hostname}${urlObj.pathname}${urlObj.search}`
+        audioRef.current.src = `${BACKEND_BASE}/stream/${urlObj.hostname}${urlObj.pathname}${urlObj.search}`
       } catch (err) {
         audioRef.current.src = currentTrack.audioUrl
       }
