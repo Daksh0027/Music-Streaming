@@ -7,3 +7,4 @@ build/
 *.log
 hls-cache/
 scratch/test/
+registry.json

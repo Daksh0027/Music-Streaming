@@ -134,15 +134,20 @@ function startTranscoding(hash, url, duration) {
   }
 
   // Spawn ffmpeg to output segment files. We output to an internal dummy playlist.
+  // -reconnect flags allow FFmpeg to follow CDN redirects and recover from transient network drops
   const ffmpegProcess = spawn(ffmpegPath, [
-    '-headers', 'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36\r\n',
+    '-reconnect', '1',
+    '-reconnect_streamed', '1',
+    '-reconnect_delay_max', '5',
+    '-user_agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     '-i', url,
     '-c:a', 'aac',
-    '-b:a', '192k',
+    '-b:a', '128k',
     '-vn',
     '-hls_time', '6',
     '-start_number', '0',
     '-hls_list_size', '0',
+    '-hls_flags', 'independent_segments',
     '-hls_segment_filename', path.join(streamDir, 'seg-%d.ts'),
     path.join(streamDir, 'internal_playlist.m3u8')
   ]);
@@ -156,18 +161,30 @@ function startTranscoding(hash, url, duration) {
 
   activeStreams.set(hash, streamObj);
 
+  let ffmpegStderrBuffer = '';
+  ffmpegProcess.stderr.on('data', (data) => {
+    const text = data.toString();
+    ffmpegStderrBuffer += text;
+    // Only log meaningful lines (skip frame/progress lines to reduce noise)
+    const lines = text.split('\n').filter(l => l.trim() && !l.startsWith('frame=') && !l.startsWith('size='));
+    if (lines.length > 0) {
+      console.error(`[FFmpeg stderr ${hash}]: ${lines.join(' | ').trim()}`);
+    }
+  });
+
   ffmpegProcess.on('close', (code) => {
     console.log(`[HLS Backend] FFmpeg process for ${hash} exited with code ${code}`);
+    if (code !== 0) {
+      // Log last part of stderr to capture the actual error message
+      const tail = ffmpegStderrBuffer.slice(-800).trim();
+      console.error(`[HLS Backend] FFmpeg failure tail for ${hash}: ${tail}`);
+    }
     streamObj.exited = true;
   });
 
   ffmpegProcess.on('error', (err) => {
-    console.error(`[HLS Backend] FFmpeg process for ${hash} error:`, err.message);
-  });
-
-  // Log stderr details to help diagnose cloud audio fetching issues
-  ffmpegProcess.stderr.on('data', (data) => {
-    console.error(`[FFmpeg stderr ${hash}]: ${data.toString().trim()}`);
+    console.error(`[HLS Backend] FFmpeg spawn error for ${hash}:`, err.message);
+    streamObj.exited = true;
   });
 
   // INSTANT VOD MANIFEST GENERATION: Write the complete HLS manifest immediately if not present
@@ -239,8 +256,30 @@ app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
   const playlistPath = path.join(streamDir, 'playlist.m3u8');
 
   // If playlist doesn't exist or stream is not active, start transcoding
-  if (!fs.existsSync(playlistPath) || !activeStreams.has(hash)) {
+  const needsTranscoding = !fs.existsSync(playlistPath) || !activeStreams.has(hash);
+  if (needsTranscoding) {
     startTranscoding(hash, url, duration);
+
+    // PRE-WARM: Wait for seg-0.ts to be produced before responding with the playlist.
+    // This prevents hls.js from immediately requesting seg-0.ts before FFmpeg has had
+    // any time to process the audio. On Render this is critical since FFmpeg needs to
+    // establish a network connection to the remote CDN first.
+    const seg0Path = path.join(streamDir, 'seg-0.ts');
+    const PRE_WARM_TIMEOUT_MS = 30000;
+    const PRE_WARM_POLL_MS = 200;
+    const maxPreWarmPolls = PRE_WARM_TIMEOUT_MS / PRE_WARM_POLL_MS;
+    for (let i = 0; i < maxPreWarmPolls; i++) {
+      if (fs.existsSync(seg0Path)) {
+        console.log(`[HLS Backend] Pre-warm complete: seg-0.ts ready for hash ${hash} after ${i * PRE_WARM_POLL_MS}ms`);
+        break;
+      }
+      const activeStream = activeStreams.get(hash);
+      if (activeStream && activeStream.exited) {
+        console.warn(`[HLS Backend] Pre-warm aborted: FFmpeg exited early for hash ${hash}`);
+        break;
+      }
+      await new Promise(resolve => setTimeout(resolve, PRE_WARM_POLL_MS));
+    }
   }
 
   // Update last accessed timestamp
@@ -285,9 +324,15 @@ app.get('/hls/:hash/:file', async (req, res) => {
       }
     }
 
-    // Poll up to 10 seconds (gives FFmpeg more time for deep seeks/scrubs)
+    // Poll up to 45 seconds — Render needs extra time to:
+    // 1. Open TCP connection to remote CDN
+    // 2. Follow redirects
+    // 3. Buffer enough audio to emit the first segment
+    const MAX_WAIT_MS = 45000;
+    const POLL_INTERVAL_MS = 100;
+    const maxPolls = MAX_WAIT_MS / POLL_INTERVAL_MS;
     let ready = false;
-    for (let i = 0; i < 200; i++) { // Poll every 50ms up to 10 seconds
+    for (let i = 0; i < maxPolls; i++) {
       if (fs.existsSync(filePath)) {
         ready = true;
         break;
@@ -296,15 +341,16 @@ app.get('/hls/:hash/:file', async (req, res) => {
       // If the FFmpeg process has exited and file still doesn't exist, it will never exist
       const activeStream = activeStreams.get(hash);
       if (activeStream && activeStream.exited) {
+        console.warn(`[HLS Backend] FFmpeg exited before producing ${file} — segment will never exist.`);
         break;
       }
 
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
     }
     
     if (!ready) {
       console.warn(`[HLS Backend] Timeout waiting for segment: ${file}`);
-      return res.status(404).send('Segment not ready');
+      return res.status(504).send('Segment not ready — transcoding timeout');
     }
   }
 
