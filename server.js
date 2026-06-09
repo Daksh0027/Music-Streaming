@@ -74,6 +74,39 @@ const activeStreams = new Map();
 
 // Map to track registered metadata: hash -> { url, duration }
 const streamRegistry = new Map();
+const REGISTRY_FILE = path.join(__dirname, 'registry.json');
+
+// Load registry from disk on startup to recover from server cold starts/restarts
+function loadRegistry() {
+  try {
+    if (fs.existsSync(REGISTRY_FILE)) {
+      const data = fs.readFileSync(REGISTRY_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      for (const [k, v] of Object.entries(parsed)) {
+        streamRegistry.set(k, v);
+      }
+      console.log(`[HLS Backend] Loaded ${streamRegistry.size} registered streams from disk.`);
+    }
+  } catch (err) {
+    console.warn('[HLS Backend] Failed to load registry from disk:', err.message);
+  }
+}
+
+// Save registry to disk so it survives container restarts
+function saveRegistry() {
+  try {
+    const obj = {};
+    for (const [k, v] of streamRegistry.entries()) {
+      obj[k] = v;
+    }
+    fs.writeFileSync(REGISTRY_FILE, JSON.stringify(obj), 'utf8');
+  } catch (err) {
+    console.warn('[HLS Backend] Failed to save registry to disk:', err.message);
+  }
+}
+
+// Load metadata immediately
+loadRegistry();
 
 // Helper to spawn FFmpeg and start transcoding dynamically
 function startTranscoding(hash, url, duration) {
@@ -198,8 +231,9 @@ app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
     return res.status(400).send('URL query parameter is required');
   }
 
-  // Register metadata for self-healing restarts
+  // Register metadata for self-healing restarts and persist it
   streamRegistry.set(hash, { url, duration });
+  saveRegistry();
 
   const streamDir = path.join(CACHE_DIR, hash);
   const playlistPath = path.join(streamDir, 'playlist.m3u8');
@@ -216,6 +250,10 @@ app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
   }
 
   res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+  // Disable client caching so browser always queries server for the playlist manifest
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(playlistPath);
 });
 
