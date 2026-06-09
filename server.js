@@ -3,7 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { spawn } = require('child_process');
 const ffmpegPath = require('ffmpeg-static');
-
+const cors = require('cors');
 const app = express();
 const PORT = 3001;
 const CACHE_DIR = path.join(__dirname, 'hls-cache');
