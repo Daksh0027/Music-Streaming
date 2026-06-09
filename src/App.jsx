@@ -705,7 +705,7 @@ export default function App() {
     }
 
     const hash = getHash(currentTrack.audioUrl)
-    const playlistUrl = `${BACKEND_BASE}/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}`
+    const playlistUrl = `${BACKEND_BASE}/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}&_t=${Date.now()}`
 
     if (Hls.isSupported()) {
       const hls = new Hls()

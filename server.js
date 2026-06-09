@@ -186,7 +186,7 @@ function startTranscoding(hash, url, duration) {
         ? (duration - (i * segmentDuration)) 
         : segmentDuration;
       m3u8 += `#EXTINF:${actualDuration.toFixed(3)},\n`;
-      m3u8 += `seg-${i}.ts\n`;
+      m3u8 += `seg-${i}.ts?url=${encodeURIComponent(url)}&duration=${duration}\n`;
     }
 
     m3u8 += `#EXT-X-ENDLIST\n`;
@@ -260,6 +260,7 @@ app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
 // Segment and playlist files serve route with polling fallback
 app.get('/hls/:hash/:file', async (req, res) => {
   const { hash, file } = req.params;
+  const { url, duration } = req.query;
   const filePath = path.join(CACHE_DIR, hash, file);
 
   // If requesting a .ts segment that hasn't been generated yet
@@ -267,7 +268,16 @@ app.get('/hls/:hash/:file', async (req, res) => {
     // Self-healing: if transcoding has stopped or directory was deleted, auto-restart
     if (!activeStreams.has(hash)) {
       console.log(`[HLS Backend] Segment ${file} requested but transcoding is idle. Checking registry to restart...`);
-      const registered = streamRegistry.get(hash);
+      let registered = streamRegistry.get(hash);
+      
+      // Fallback to query params if not found in registry (e.g. after server restart/redeploy)
+      if (!registered && url) {
+        console.log(`[HLS Backend] Restoring registry metadata from query params for hash ${hash}`);
+        registered = { url, duration: parseFloat(duration || '180') };
+        streamRegistry.set(hash, registered);
+        saveRegistry();
+      }
+
       if (registered) {
         startTranscoding(hash, registered.url, registered.duration);
       } else {
