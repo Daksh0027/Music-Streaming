@@ -4,11 +4,24 @@ import Sidebar from './components/Sidebar'
 import MainContent from './components/MainContent'
 import RightSidebar from './components/RightSidebar'
 import PlayerBar from './components/PlayerBar'
+import MobileLayout from './components/MobileLayout'
 
 import { TRACKS_DATA } from './tracks'
 import { supabase } from './lib/supabase'
 import { useUser } from '@clerk/clerk-react'
 import Hls from 'hls.js'
+
+// Detect if the user is on a phone-sized screen
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth <= 768)
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)')
+    const handler = (e) => setIsMobile(e.matches)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [])
+  return isMobile
+}
 
 // HSL Conversion helpers for premium cover art color extraction
 function rgbToHsl(r, g, b) {
@@ -1145,6 +1158,88 @@ export default function App() {
     }
   }
 
+  const isMobile = useIsMobile()
+
+  const mainContentProps = {
+    activeTab,
+    navigateTo,
+    searchQuery,
+    setSearchQuery,
+    likedTrackIds,
+    likedTracks,
+    toggleLike,
+    playSong,
+    currentTrack,
+    isPlaying,
+    onPlayPause: handlePlayPause,
+    homeTracks,
+    madeForYouTracks,
+    jumpBackInTracks,
+    isHomeLoading,
+    searchResults,
+    isSearching,
+    artistDetails,
+    isArtistLoading,
+    onClickArtist,
+    albumDetails,
+    isAlbumLoading,
+    onClickAlbum,
+    canGoBack: historyIndex > 0,
+    canGoForward: historyIndex < history.length - 1,
+    navigateBack,
+    navigateForward,
+    activeQueue,
+    lyrics,
+    isLyricsLoading,
+    currentTime,
+    isLyricsSynced,
+    onScrub: handleScrub,
+    trackAccentColor,
+    userQueue,
+    addToQueue,
+    removeFromQueue,
+    clearQueue,
+    playlists,
+    currentPlaylist,
+    currentPlaylistTracks,
+    isPlaylistLoading,
+    createPlaylist,
+    deletePlaylist,
+    addTrackToPlaylist,
+    removeTrackFromPlaylist
+  }
+
+  if (isMobile) {
+    return (
+      <MobileLayout
+        activeTab={activeTab}
+        navigateTo={navigateTo}
+        currentTrack={currentTrack}
+        isPlaying={isPlaying}
+        currentTime={currentTime}
+        duration={duration}
+        volume={volume}
+        isMuted={isMuted}
+        shuffle={shuffle}
+        repeat={repeat}
+        likedTrackIds={likedTrackIds}
+        onPlayPause={handlePlayPause}
+        onNext={handleNext}
+        onPrev={handlePrev}
+        onScrub={handleScrub}
+        onVolumeChange={setVolume}
+        onToggleMute={() => setIsMuted(!isMuted)}
+        onToggleShuffle={() => setShuffle(!shuffle)}
+        onToggleRepeat={() => setRepeat(!repeat)}
+        onToggleLike={toggleLike}
+        playlists={playlists}
+        createPlaylist={createPlaylist}
+      >
+        <MainContent {...mainContentProps} />
+      </MobileLayout>
+    )
+  }
+
   return (
     <div className="app-root">
       <div className="main-layout">
@@ -1159,87 +1254,31 @@ export default function App() {
           playlists={playlists}
           createPlaylist={createPlaylist}
         />
-        <MainContent 
-          activeTab={activeTab}
-          navigateTo={navigateTo}
-          searchQuery={searchQuery}
-          setSearchQuery={setSearchQuery}
-          likedTrackIds={likedTrackIds}
-          likedTracks={likedTracks}
-          toggleLike={toggleLike}
-          playSong={playSong}
+        <MainContent {...mainContentProps} />
+        <RightSidebar 
           currentTrack={currentTrack}
           isPlaying={isPlaying}
-          onPlayPause={handlePlayPause}
-          // Dynamic Home shelves
-          homeTracks={homeTracks}
-          madeForYouTracks={madeForYouTracks}
-          jumpBackInTracks={jumpBackInTracks}
-          isHomeLoading={isHomeLoading}
-          // Real-Time Search lists
-          searchResults={searchResults}
-          isSearching={isSearching}
-          // Dynamic Artist details
-          artistDetails={artistDetails}
-          isArtistLoading={isArtistLoading}
-          onClickArtist={onClickArtist}
-          // Dynamic Album details
-          albumDetails={albumDetails}
-          isAlbumLoading={isAlbumLoading}
-          onClickAlbum={onClickAlbum}
-          // Navigation controls
-          canGoBack={historyIndex > 0}
-          canGoForward={historyIndex < history.length - 1}
-          navigateBack={navigateBack}
-          navigateForward={navigateForward}
-          activeQueue={activeQueue}
+          currentTime={currentTime}
+          onClose={() => {}}
+          likedTrackIds={likedTrackIds}
+          toggleLike={toggleLike}
+          recommendations={recommendations}
+          playSong={playSong}
           lyrics={lyrics}
           isLyricsLoading={isLyricsLoading}
-          currentTime={currentTime}
           isLyricsSynced={isLyricsSynced}
           onScrub={handleScrub}
           trackAccentColor={trackAccentColor}
-          // Play Queue props
-          userQueue={userQueue}
+          playlists={playlists}
+          addTrackToPlaylist={addTrackToPlaylist}
+          onClickArtist={onClickArtist}
           addToQueue={addToQueue}
+          rightSidebarTab={rightSidebarTab}
+          userQueue={userQueue}
           removeFromQueue={removeFromQueue}
           clearQueue={clearQueue}
-          // Supabase custom playlist props
-          playlists={playlists}
-          currentPlaylist={currentPlaylist}
-          currentPlaylistTracks={currentPlaylistTracks}
-          isPlaylistLoading={isPlaylistLoading}
-          createPlaylist={createPlaylist}
-          deletePlaylist={deletePlaylist}
-          addTrackToPlaylist={addTrackToPlaylist}
-          removeTrackFromPlaylist={removeTrackFromPlaylist}
+          activeQueue={activeQueue}
         />
-        (
-          <RightSidebar 
-            currentTrack={currentTrack}
-            isPlaying={isPlaying}
-            currentTime={currentTime}
-            onClose={() => setIsRightSidebarOpen(false)}
-            likedTrackIds={likedTrackIds}
-            toggleLike={toggleLike}
-            recommendations={recommendations}
-            playSong={playSong}
-            lyrics={lyrics}
-            isLyricsLoading={isLyricsLoading}
-            isLyricsSynced={isLyricsSynced}
-            onScrub={handleScrub}
-            trackAccentColor={trackAccentColor}
-            playlists={playlists}
-            addTrackToPlaylist={addTrackToPlaylist}
-            onClickArtist={onClickArtist}
-            addToQueue={addToQueue}
-            rightSidebarTab={rightSidebarTab}
-            userQueue={userQueue}
-            removeFromQueue={removeFromQueue}
-            clearQueue={clearQueue}
-            activeQueue={activeQueue}
-          />
-        )}
       </div>
       <PlayerBar 
         currentTrack={currentTrack}
@@ -1251,7 +1290,6 @@ export default function App() {
         shuffle={shuffle}
         repeat={repeat}
         likedTrackIds={likedTrackIds}
-
         rightSidebarTab={rightSidebarTab}
         onPlayPause={handlePlayPause}
         onNext={handleNext}

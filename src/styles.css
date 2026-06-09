@@ -1124,6 +1124,578 @@ button:active {
   border-radius: 8px;
 }
 
+/* ===== MOBILE LAYOUT (dedicated phone UI) ===== */
+
+/* Hide desktop UI on mobile */
+@media (max-width: 768px) {
+  .app-root { display: none !important; }
+  .mobile-app-root { display: flex !important; }
+}
+
+/* Show desktop UI on desktop, hide mobile */
+@media (min-width: 769px) {
+  .mobile-app-root { display: none !important; }
+}
+
+/* Mobile app shell */
+.mobile-app-root {
+  display: none;
+  flex-direction: column;
+  height: 100vh;
+  height: 100dvh;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Content area (scrolls) */
+.mobile-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* Mobile top bar */
+.mobile-top-bar {
+  padding: 12px 16px 8px 16px;
+  flex-shrink: 0;
+  background: #000;
+  z-index: 10;
+}
+
+.mobile-header-home {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.mobile-header-search,
+.mobile-header-library,
+.mobile-header-default {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.mobile-user-avatar {
+  flex-shrink: 0;
+}
+
+.mobile-avatar-placeholder {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1db954, #19e68c);
+  color: #000;
+  font-weight: 800;
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.mobile-filter-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  flex: 1;
+}
+
+.mobile-filter-pills::-webkit-scrollbar { display: none; }
+
+.mobile-pill {
+  padding: 6px 14px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.1);
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.mobile-pill.active {
+  background: var(--spotify-green);
+  color: #000;
+}
+
+/* Mobile page content */
+.mobile-page-content {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.mobile-page-content::-webkit-scrollbar { display: none; }
+
+/* Mobile main content overrides */
+.mobile-page-content .main-content-area {
+  border-radius: 0;
+  border: none;
+  overflow: visible;
+  height: auto;
+  min-height: 100%;
+}
+
+.mobile-page-content .top-bar {
+  display: none;
+}
+
+.mobile-page-content .main-scrollable {
+  padding: 0 16px 16px 16px;
+  padding-top: 8px;
+  overflow-y: visible;
+  flex: none;
+}
+
+/* Mobile quick picks grid — 2 column */
+.mobile-page-content .quick-picks-grid {
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.mobile-page-content .quick-picks-header {
+  font-size: 20px;
+  margin-bottom: 12px;
+}
+
+/* Horizontal shelf cards */
+.mobile-page-content .cards-grid {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  gap: 12px;
+  scrollbar-width: none;
+  padding-bottom: 8px;
+}
+
+.mobile-page-content .cards-grid::-webkit-scrollbar { display: none; }
+
+.mobile-page-content .card {
+  min-width: 140px;
+  max-width: 140px;
+  flex-shrink: 0;
+}
+
+.mobile-page-content .shelf-header h2 {
+  font-size: 18px;
+}
+
+/* Mobile search bar */
+.mobile-search-bar {
+  margin: 0 16px 16px 16px;
+  background: #242424;
+  border-radius: 8px;
+  padding: 0 16px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-search-bar input {
+  background: none;
+  border: none;
+  color: #fff;
+  flex: 1;
+  outline: none;
+  font-size: 15px;
+}
+
+.mobile-search-bar input::placeholder { color: #b3b3b3; }
+
+/* Hide desktop sidebar & right sidebar in mobile content */
+.mobile-page-content .sidebar,
+.mobile-page-content .right-sidebar {
+  display: none;
+}
+
+/* Mobile track table — simplified */
+.mobile-page-content .track-table .row-album,
+.mobile-page-content .track-table .row-index {
+  display: none;
+}
+
+/* Mobile mini player */
+.mobile-mini-player {
+  flex-shrink: 0;
+  margin: 0 8px 4px 8px;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  z-index: 50;
+}
+
+.mmp-progress-bar {
+  height: 2px;
+  background: rgba(255,255,255,0.15);
+  position: absolute;
+  top: 0; left: 0; right: 0;
+}
+
+.mmp-progress-fill {
+  height: 100%;
+  background: var(--spotify-green);
+  transition: width 0.5s linear;
+}
+
+.mmp-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.mmp-img {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  background-size: cover;
+  background-position: center;
+  flex-shrink: 0;
+}
+
+.mmp-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.mmp-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mmp-artist {
+  font-size: 11px;
+  color: #b3b3b3;
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mmp-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mmp-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mmp-play {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.1);
+}
+
+/* Mobile bottom nav */
+.mobile-bottom-nav {
+  display: flex;
+  background: rgba(10,10,10,0.98);
+  border-top: 1px solid rgba(255,255,255,0.06);
+  padding: 8px 0 env(safe-area-inset-bottom, 8px);
+  flex-shrink: 0;
+  z-index: 50;
+}
+
+.mobile-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: none;
+  border: none;
+  color: #b3b3b3;
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.mobile-nav-item.active {
+  color: #fff;
+}
+
+.mobile-nav-item span {
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* ===== Full-Screen Mobile Player ===== */
+.mobile-full-player {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mfp-bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(40px) saturate(1.6);
+  transform: scale(1.15);
+  z-index: 0;
+}
+
+.mfp-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.65);
+  z-index: 1;
+}
+
+.mfp-content {
+  position: relative;
+  z-index: 2;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 24px 24px 24px;
+  padding-top: env(safe-area-inset-top, 12px);
+  padding-bottom: env(safe-area-inset-bottom, 24px);
+  gap: 0;
+}
+
+/* Full-screen player header */
+.mfp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 0 8px 0;
+}
+
+.mfp-close {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+  opacity: 0.8;
+}
+
+.mfp-header-label {
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: rgba(255,255,255,0.85);
+}
+
+.mfp-dots {
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.8;
+  letter-spacing: 2px;
+}
+
+/* Album art */
+.mfp-art-container {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.mfp-art {
+  width: 100%;
+  max-width: 320px;
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background-size: cover;
+  background-position: center;
+  box-shadow: 0 32px 64px rgba(0,0,0,0.5);
+}
+
+/* Track info row */
+.mfp-track-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0 12px 0;
+}
+
+.mfp-track-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 250px;
+}
+
+.mfp-track-artist {
+  font-size: 14px;
+  color: rgba(255,255,255,0.65);
+  margin-top: 4px;
+}
+
+.mfp-like-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  flex-shrink: 0;
+}
+
+/* Progress scrubber */
+.mfp-progress-section {
+  margin-bottom: 12px;
+}
+
+.mfp-scrub-bar {
+  height: 4px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 2px;
+  cursor: pointer;
+  position: relative;
+  margin-bottom: 6px;
+}
+
+.mfp-scrub-fill {
+  height: 100%;
+  background: #fff;
+  border-radius: 2px;
+  position: relative;
+  transition: width 0.5s linear;
+}
+
+.mfp-scrub-handle {
+  position: absolute;
+  right: -6px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+}
+
+.mfp-times {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  font-weight: 500;
+}
+
+/* Controls */
+.mfp-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.mfp-ctrl-btn {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  padding: 8px;
+  transition: color 0.2s;
+}
+
+.mfp-ctrl-btn.active {
+  color: var(--spotify-green);
+}
+
+.mfp-skip-btn {
+  background: none;
+  border: none;
+  color: #fff;
+  cursor: pointer;
+  padding: 8px;
+}
+
+.mfp-play-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: #fff;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+  transition: transform 0.1s;
+}
+
+.mfp-play-btn:active {
+  transform: scale(0.95);
+}
+
+/* Volume */
+.mfp-volume {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mfp-volume-slider {
+  flex: 1;
+  -webkit-appearance: none;
+  height: 3px;
+  border-radius: 2px;
+  cursor: pointer;
+  outline: none;
+}
+
+.mfp-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  cursor: pointer;
+}
+
+/* Mobile library page */
+.mobile-library-list {
+  padding: 0 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+
+
 .pb-left {
   width: 30%;
   display: flex;
