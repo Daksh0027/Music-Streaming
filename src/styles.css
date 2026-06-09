@@ -1291,7 +1291,7 @@ button:active {
   font-size: 18px;
 }
 
-/* Mobile search bar */
+/* Mobile search bar (inside mobile-page-content, kept for other uses) */
 .mobile-search-bar {
   margin: 0 16px 16px 16px;
   background: #242424;
@@ -1314,17 +1314,117 @@ button:active {
 
 .mobile-search-bar input::placeholder { color: #b3b3b3; }
 
+/* Search input bar in the mobile header */
+.mobile-search-input-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #242424;
+  border-radius: 8px;
+  padding: 0 14px;
+  height: 46px;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.mobile-search-input-bar:focus-within {
+  border-color: rgba(255,255,255,0.2);
+  background: #2a2a2a;
+}
+
+/* Make mobile-header-search stack vertically */
+.mobile-header-search {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
 /* Hide desktop sidebar & right sidebar in mobile content */
 .mobile-page-content .sidebar,
 .mobile-page-content .right-sidebar {
   display: none;
 }
 
-/* Mobile track table — simplified */
+/* ===== Mobile track table — comprehensive fix ===== */
+
+/* Hide columns that don't fit on phone */
 .mobile-page-content .track-table .row-album,
-.mobile-page-content .track-table .row-index {
+.mobile-page-content .track-table .row-index,
+.mobile-page-content .track-table th:first-child,
+.mobile-page-content .track-table th:nth-child(3) {
   display: none;
 }
+
+/* Make the table full-width and simpler */
+.mobile-page-content .track-table {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Title column takes all remaining space */
+.mobile-page-content .track-table .row-title-col {
+  max-width: calc(100vw - 130px);
+}
+
+.mobile-page-content .track-table .row-track-details h4,
+.mobile-page-content .track-table .row-track-details p {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 160px;
+}
+
+/* Duration cell — compact row with like + time + dots */
+.mobile-page-content .track-table .row-duration {
+  width: auto !important;
+  white-space: nowrap;
+}
+
+/* ••• dropdown: open UPWARD on mobile so it doesn't hide under mini player */
+.mobile-page-content .playlist-dropdown-container {
+  position: static;
+}
+
+.mobile-page-content .playlist-dropdown {
+  position: fixed;
+  bottom: 130px;   /* above mini player + bottom nav */
+  right: 16px;
+  left: 16px;
+  width: auto;
+  top: auto;
+  z-index: 500;
+  border-radius: 12px;
+}
+
+/* Liked songs header — compact on mobile */
+.mobile-page-content .liked-songs-header {
+  height: auto;
+  min-height: 160px;
+  padding: 20px 16px 16px 16px;
+  margin: -8px -16px 16px -16px;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.mobile-page-content .liked-badge-large {
+  width: 100px;
+  height: 100px;
+  font-size: 52px;
+}
+
+.mobile-page-content .liked-meta h1 {
+  font-size: 36px;
+}
+
+/* Playlist header compact */
+.mobile-page-content .playlist-hero {
+  height: auto !important;
+  min-height: 160px;
+  padding: 16px !important;
+  margin: -8px -16px 16px -16px !important;
+}
+
 
 /* Mobile mini player */
 .mobile-mini-player {

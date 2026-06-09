@@ -33,6 +33,8 @@ export default function MobileLayout({
   onToggleLike,
   playlists,
   createPlaylist,
+  searchQuery,
+  setSearchQuery,
   children
 }) {
   const [playerExpanded, setPlayerExpanded] = useState(false)
@@ -84,8 +86,35 @@ export default function MobileLayout({
             </div>
           )}
           {activeTab === 'search' && (
-            <div className="mobile-header-search">
+            <div className="mobile-header-search" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
               <h1 style={{ fontSize: 24, fontWeight: 800 }}>Search</h1>
+              <div className="mobile-search-input-bar">
+                <Search size={18} style={{ color: '#b3b3b3', flexShrink: 0 }} />
+                <input
+                  autoFocus
+                  type="text"
+                  placeholder="What do you want to play?"
+                  value={searchQuery || ''}
+                  onChange={e => setSearchQuery && setSearchQuery(e.target.value)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    outline: 'none',
+                    color: '#fff',
+                    fontSize: 15,
+                    flex: 1,
+                    fontFamily: 'inherit'
+                  }}
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery && setSearchQuery('')}
+                    style={{ background: 'none', border: 'none', color: '#b3b3b3', cursor: 'pointer', padding: '0 4px', display: 'flex', alignItems: 'center' }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
             </div>
           )}
           {activeTab === 'library' && (

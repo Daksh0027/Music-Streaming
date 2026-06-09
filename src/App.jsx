@@ -1234,6 +1234,8 @@ export default function App() {
         onToggleLike={toggleLike}
         playlists={playlists}
         createPlaylist={createPlaylist}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
       >
         <MainContent {...mainContentProps} />
       </MobileLayout>
