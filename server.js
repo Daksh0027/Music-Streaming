@@ -136,7 +136,7 @@ function startTranscoding(hash, url, duration) {
     '-c:a', 'aac',
     '-b:a', '128k',
     '-vn',
-    '-hls_time', '6',
+    '-hls_time', '3',
     '-start_number', '0',
     '-hls_list_size', '0',
     '-hls_flags', 'independent_segments',
@@ -181,7 +181,7 @@ function startTranscoding(hash, url, duration) {
 
   // INSTANT VOD MANIFEST GENERATION: Write the complete HLS manifest immediately if not present
   if (!fs.existsSync(playlistPath)) {
-    const segmentDuration = 6;
+    const segmentDuration = 3;
     const numSegments = Math.ceil(duration / segmentDuration);
 
     let m3u8 = `#EXTM3U\n`;
@@ -253,7 +253,7 @@ app.get('/hls/:hash/playlist.m3u8', async (req, res) => {
     // any time to process the audio. On Render this is critical since FFmpeg needs to
     // establish a network connection to the remote CDN first.
     const seg0Path = path.join(streamDir, 'seg-0.ts');
-    const PRE_WARM_TIMEOUT_MS = 30000;
+    const PRE_WARM_TIMEOUT_MS = 8000;
     const PRE_WARM_POLL_MS = 200;
     const maxPreWarmPolls = PRE_WARM_TIMEOUT_MS / PRE_WARM_POLL_MS;
     for (let i = 0; i < maxPreWarmPolls; i++) {
