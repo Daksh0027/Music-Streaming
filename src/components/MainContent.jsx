@@ -389,7 +389,7 @@ export default function MainContent({
     )
   }
 
-  // Dynamic greeting based on current local time
+  // Dynamic greeting based on current local time (hidden on mobile home to match Spotify UI)
   const getGreeting = () => {
     const hrs = new Date().getHours()
     let baseGreeting = 'Good evening'
@@ -401,6 +401,18 @@ export default function MainContent({
     }
     return baseGreeting
   }
+
+  // Mobile mock data for Spotify layout
+  const mockTopMixes = [
+    { id: 'm1', title: 'OG Lucifer Mix', desc: 'Seedhe Maut, Bhaktaaa and Encore ABJ', img: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300', barColor: '#c5f04b', barTextColor: '#000' },
+    { id: 'm2', title: 'Rawal Mix', desc: 'Seedhe Maut, Bhaktaaa and Tsumyoki', img: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=300', barColor: '#f04bc5', barTextColor: '#000' },
+    { id: 'm3', title: 'Frank Ocean Mix', desc: 'Frank Ocean, Tyler The Creator and more', img: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=300', barColor: '#4b9cf0', barTextColor: '#fff' }
+  ];
+
+  const mockRadio = [
+    { id: 'r1', title: 'Pure Cocaine', type: 'RADIO', bg: '#ff6b6b', img1: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=100', img2: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=100', img3: 'https://images.unsplash.com/photo-1511735111819-9a3f7709049c?q=80&w=100' },
+    { id: 'r2', title: 'Your Library (feat. Migos)', type: 'RADIO', bg: '#4b6cf0', img1: 'https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?q=80&w=100', img2: 'https://images.unsplash.com/photo-1507838153414-b4b713384a76?q=80&w=100', img3: 'https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=100' }
+  ];
 
   return (
     <main 
@@ -434,7 +446,7 @@ export default function MainContent({
         style={activeTab === 'lyrics' ? { padding: 0, paddingTop: 0 } : {}}
       >
         {activeTab === 'home' && (
-          <div>
+          <div className="home-content-wrapper">
             <h1 className="quick-picks-header">{getGreeting()}</h1>
 
             {isHomeLoading ? (
@@ -467,176 +479,95 @@ export default function MainContent({
               </div>
             ) : (
               <>
-                {/* Quick Picks Grid (6 items) */}
+                {/* Quick Picks Grid (8 items customized for mobile view) */}
                 <div className="quick-picks-grid">
-                  {/* Card 1: Liked Songs */}
                   <div className="quick-pick-card" onClick={() => navigateTo('liked')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ background: 'linear-gradient(135deg, #450af5, #c4efd9)', color: '#fff', fontSize: 24 }}
-                    >
-                      💜
+                    <div className="qp-img liked">
+                      <Heart size={24} fill="#fff" style={{ color: '#fff' }} />
                     </div>
                     <div className="qp-title">Liked Songs</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        if (likedTracks.length > 0) {
-                          playSong(likedTracks[0], likedTracks)
-                        } else {
-                          navigateTo('liked')
-                        }
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
                   </div>
 
-                  {/* Card 2: Daily Mix 1 */}
-                  <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-dm1')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ backgroundImage: `url(${SYSTEM_PLAYLISTS.dm1.coverUrl})` }}
-                    />
-                    <div className="qp-title">Daily Mix 1</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigateTo('sysplaylist-dm1')
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
+                  <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-rr')}>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=150)` }} />
+                    <div className="qp-title">PARTYNEXTDOOR</div>
                   </div>
 
-                  {/* Card 3: Daily Mix 2 */}
                   <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-dm2')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ backgroundImage: `url(${SYSTEM_PLAYLISTS.dm2.coverUrl})` }}
-                    />
-                    <div className="qp-title">Daily Mix 2</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigateTo('sysplaylist-dm2')
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1498038432885-c6f3f1b912ee?q=80&w=150)` }} />
+                    <div className="qp-title">Metro</div>
                   </div>
 
-                  {/* Card 4: Daily Mix 3 */}
                   <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-dm3')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ backgroundImage: `url(${SYSTEM_PLAYLISTS.dm3.coverUrl})` }}
-                    />
-                    <div className="qp-title">Daily Mix 3</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigateTo('sysplaylist-dm3')
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1507838153414-b4b713384a76?q=80&w=150)` }} />
+                    <div className="qp-title">PLAYBOI CARTI UNRELEASED...</div>
                   </div>
 
-                  {/* Card 5: Discover Weekly */}
                   <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-dw')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ backgroundImage: `url(${SYSTEM_PLAYLISTS.dw.coverUrl})` }}
-                    />
-                    <div className="qp-title">Discover Weekly</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigateTo('sysplaylist-dw')
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=150)` }} />
+                    <div className="qp-title">ICEMAN</div>
                   </div>
 
-                  {/* Card 6: Top 50 - Global */}
                   <div className="quick-pick-card" onClick={() => navigateTo('sysplaylist-top50')}>
-                    <div 
-                      className="qp-img" 
-                      style={{ backgroundImage: `url(${SYSTEM_PLAYLISTS.top50.coverUrl})` }}
-                    />
-                    <div className="qp-title">Top 50 - Global</div>
-                    <button 
-                      className="qp-play-hover"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        navigateTo('sysplaylist-top50')
-                      }}
-                    >
-                      <Play fill="#000" size={18} style={{ marginLeft: 2 }} />
-                    </button>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1505740420928-5e560c06d30e?q=80&w=150)` }} />
+                    <div className="qp-title">Rawal Radio</div>
+                  </div>
+
+                  <div className="quick-pick-card" onClick={() => {}}>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1614680376573-df3480f0c6ff?q=80&w=150)` }} />
+                    <div className="qp-title">FUTURE HARDEST SO...</div>
+                  </div>
+
+                  <div className="quick-pick-card" onClick={() => {}}>
+                    <div className="qp-img" style={{ backgroundImage: `url(https://images.unsplash.com/photo-1511735111819-9a3f7709049c?q=80&w=150)` }} />
+                    <div className="qp-title">Whole Lotta Red</div>
                   </div>
                 </div>
 
-                {/* Made For You Shelf */}
-                <section className="shelf">
+                {/* Mobile mock sections that appear in Home */}
+                <section className="shelf" style={{ marginBottom: 32 }}>
                   <div className="shelf-header">
-                    <h2>Made For {isSignedIn ? (user.firstName || 'You') : 'You'}</h2>
+                    <h2 style={{ fontSize: 22, fontWeight: 800 }}>Your top mixes</h2>
                   </div>
                   <div className="cards-grid">
-                    {Object.keys(SYSTEM_PLAYLISTS).slice(0, 5).map((key) => {
-                      const playlist = SYSTEM_PLAYLISTS[key]
-                      return (
-                        <div key={key} className="card" onClick={() => navigateTo(`sysplaylist-${key}`)}>
-                          <div className="card-img-container">
-                            <img className="card-img" src={playlist.coverUrl} alt={playlist.title} />
-                            <button className="card-play-btn">
-                              <Play fill="#000" size={20} style={{ marginLeft: 2 }} />
-                            </button>
+                    {mockTopMixes.map((mix) => (
+                      <div key={mix.id} className="card mix-layout" style={{ background: 'transparent', padding: 0 }} onClick={() => {}}>
+                        <div className="mix-cover" style={{ backgroundImage: `url(${mix.img})` }}>
+                           <div className="spotify-logo-sm">
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="#000"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 0 1-.853.206c-2.336-1.424-5.275-1.745-8.74-.955a.625.625 0 0 1-.274-1.22c3.784-.863 7.03-.497 9.66 1.116a.622.622 0 0 1 .207.853zm1.189-2.656a.782.782 0 0 1-1.077.258c-2.684-1.648-6.78-2.022-9.988-1.107a.782.782 0 0 1-.433-1.503c3.674-1.047 8.211-.63 11.24 1.275a.782.782 0 0 1 .258 1.077zm.12-2.766C14.675 9.105 8.522 8.878 4.966 9.957a.978.978 0 0 1-.555-1.9c3.96-1.198 10.748-.94 14.53 1.312a.978.978 0 1 1-1.046 1.732z"/></svg>
                           </div>
-                          <h3>{playlist.title}</h3>
-                          <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0 0', lineHeight: 1.4 }}>
-                            {playlist.description}
-                          </p>
+                          <div className="mix-bar" style={{ background: mix.barColor, color: mix.barTextColor }}>
+                            {mix.title}
+                          </div>
                         </div>
-                      )
-                    })}
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '6px 0 0 0', lineHeight: 1.4, whiteSpace: 'normal' }}>
+                          {mix.desc}
+                        </p>
+                      </div>
+                    ))}
                   </div>
                 </section>
 
-                {/* Jump Back In Shelf */}
-                <section className="shelf">
+                <section className="shelf" style={{ marginBottom: 40 }}>
                   <div className="shelf-header">
-                    <h2>Jump back in</h2>
+                    <h2 style={{ fontSize: 22, fontWeight: 800 }}>Recommended Stations</h2>
                   </div>
                   <div className="cards-grid">
-                    {JUMP_BACK_IN.map((item) => (
-                      <div 
-                        key={item.id} 
-                        className="card" 
-                        onClick={() => {
-                          if (item.type === 'album') {
-                            onClickAlbum && onClickAlbum(item.albumId, item.title)
-                          } else if (item.type === 'artist') {
-                            onClickArtist && onClickArtist(item.artistId, item.artist)
-                          }
-                        }}
-                      >
-                        <div className="card-img-container" style={{ borderRadius: item.type === 'artist' ? '50%' : '6px' }}>
-                          <img className="card-img" src={item.coverUrl} alt={item.title} />
-                          <button className="card-play-btn">
-                            <Play fill="#000" size={20} style={{ marginLeft: 2 }} />
-                          </button>
+                    {mockRadio.map((radio) => (
+                      <div key={radio.id} className="card radio-layout" style={{ background: 'transparent', padding: 0 }} onClick={() => {}}>
+                        <div className="radio-cover" style={{ background: radio.bg }}>
+                          <div className="spotify-logo-sm" style={{ top: 6, left: 6 }}>
+                            <svg viewBox="0 0 24 24" width="10" height="10" fill="#000"><path d="M12 2C6.477 2 2 6.477 2 12s4.477 10 10 10 10-4.477 10-10S17.523 2 12 2zm4.586 14.424a.622.622 0 0 1-.853.206c-2.336-1.424-5.275-1.745-8.74-.955a.625.625 0 0 1-.274-1.22c3.784-.863 7.03-.497 9.66 1.116a.622.622 0 0 1 .207.853zm1.189-2.656a.782.782 0 0 1-1.077.258c-2.684-1.648-6.78-2.022-9.988-1.107a.782.782 0 0 1-.433-1.503c3.674-1.047 8.211-.63 11.24 1.275a.782.782 0 0 1 .258 1.077zm.12-2.766C14.675 9.105 8.522 8.878 4.966 9.957a.978.978 0 0 1-.555-1.9c3.96-1.198 10.748-.94 14.53 1.312a.978.978 0 1 1-1.046 1.732z"/></svg>
+                          </div>
+                          <div className="radio-text-top">{radio.type}</div>
+                          <div className="radio-circles">
+                            <div className="radio-circle" style={{ backgroundImage: `url(${radio.img1})` }} />
+                            <div className="radio-circle" style={{ backgroundImage: `url(${radio.img2})` }} />
+                            <div className="radio-circle" style={{ backgroundImage: `url(${radio.img3})` }} />
+                          </div>
                         </div>
-                        <h3>{item.title}</h3>
-                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '4px 0 0 0', textTransform: 'capitalize' }}>
-                          {item.type} • {item.artist}
+                        <p style={{ color: 'var(--text-secondary)', fontSize: 13, margin: '6px 0 0 0', lineHeight: 1.4, whiteSpace: 'normal', fontWeight: 600 }}>
+                          {radio.title}
                         </p>
                       </div>
                     ))}

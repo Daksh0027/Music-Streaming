@@ -13,7 +13,7 @@ const CACHE_DIR = path.join(__dirname, 'hls-cache');
 
 // We keep a reference to the port so startTranscoding can build local proxy URLs
 let ACTUAL_PORT = PORT;
-
+app.get('/health', (req, res) => res.send('OK'));
 // Enable CORS for all cross-origin requests
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');

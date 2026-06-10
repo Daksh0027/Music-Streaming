@@ -81,7 +81,7 @@ export default function MobileLayout({
                 <SignedOut>
                   <SignInButton mode="modal">
                     <div className="mobile-avatar-placeholder">
-                      {user?.firstName?.[0] || 'G'}
+                      {user?.firstName?.[0] || 'D'}
                     </div>
                   </SignInButton>
                 </SignedOut>
