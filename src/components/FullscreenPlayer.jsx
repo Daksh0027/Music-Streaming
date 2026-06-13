@@ -378,7 +378,10 @@ export default function FullscreenPlayer({
                 <img src={currentTrack?.coverUrl} alt={currentTrack?.title} className="fs-modal-cover" />
                 <div>
                   <h3 className="fs-modal-title">{currentTrack?.title}</h3>
-                  <p className="fs-modal-subtitle">{primaryArtistName}</p>
+                  <p className="fs-modal-subtitle" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                    {currentTrack?.explicit && <span className="explicit-badge" title="Explicit">E</span>}
+                    {primaryArtistName}
+                  </p>
                 </div>
               </div>
               

@@ -168,7 +168,8 @@ const mapApiSongToTrack = (song) => {
     plays: song.playCount ? song.playCount.toLocaleString() : '100,000+',
     hasLyrics: song.hasLyrics || false,
     lyricsId: song.lyricsId || null,
-    rawArtists: song.artists
+    rawArtists: song.artists,
+    explicit: song.explicitContent === true || song.explicitContent === 'true' || song.explicitContent === 1 || song.explicitContent === '1' || false
   }
 }
 
@@ -777,7 +778,8 @@ export default function MainContent({
                                 />
                                 <div className="row-track-details">
                                   <h4 className={isSelected ? 'active-title' : ''}>{track.title}</h4>
-                                  <p style={{ display: 'inline-block' }}>
+                                  <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                    {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                                     {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                                   </p>
                                 </div>
@@ -927,7 +929,8 @@ export default function MainContent({
                               />
                               <div className="row-track-details">
                                 <h4 className={isSelected ? 'active-title' : ''}>{track.title}</h4>
-                                <p style={{ display: 'inline-block' }}>
+                                <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                  {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                                   {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                                 </p>
                               </div>
@@ -1086,7 +1089,8 @@ export default function MainContent({
                                     />
                                     <div className="row-track-details">
                                       <h4 className={isSelected ? 'active-title' : ''}>{track.title}</h4>
-                                      <p style={{ display: 'inline-block' }}>
+                                      <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                        {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                                         {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                                       </p>
                                     </div>
@@ -1282,7 +1286,8 @@ export default function MainContent({
                                   />
                                   <div className="row-track-details">
                                     <h4 className={isSelected ? 'active-title' : ''}>{track.title}</h4>
-                                    <p style={{ display: 'inline-block' }}>
+                                    <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                      {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                                       {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                                     </p>
                                   </div>
@@ -1561,7 +1566,8 @@ export default function MainContent({
                                 <div className="row-title-col">
                                   <div className="row-track-details">
                                     <h4 className={isSelected ? 'active-title' : ''}>{track.title}</h4>
-                                    <p style={{ display: 'inline-block' }}>
+                                    <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                                      {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                                       {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                                     </p>
                                   </div>

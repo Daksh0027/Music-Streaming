@@ -182,8 +182,9 @@ export default function RightSidebar({
                     {currentTrack.title}
                   </h5>
                   <p 
-                    style={{ fontSize: 11, color: '#b3b3b3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '2px 0 0 0' }}
+                    style={{ fontSize: 11, color: '#b3b3b3', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', margin: '2px 0 0 0', display: 'flex', alignItems: 'center' }}
                   >
+                    {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                     {renderClickableArtists(currentTrack, onClickArtist, '#b3b3b3')}
                   </p>
                 </div>
@@ -351,7 +352,8 @@ export default function RightSidebar({
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div style={{ minWidth: 0 }}>
                 <h2>{currentTrack.title}</h2>
-                <p style={{ display: 'inline-block' }}>
+                <p style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                   {renderClickableArtists(currentTrack, onClickArtist, 'var(--text-secondary)')}
                 </p>
               </div>

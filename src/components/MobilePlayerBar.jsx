@@ -13,7 +13,10 @@ export default function MobilePlayerBar({ currentTrack, isPlaying, onPlayPause, 
         />
         <div className="mmp-info">
           <div className="mmp-title">{currentTrack.title}</div>
-          <div className="mmp-artist">{currentTrack.artist}</div>
+          <div className="mmp-artist" style={{ display: 'inline-flex', alignItems: 'center' }}>
+            {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
+            {currentTrack.artist}
+          </div>
         </div>
       </div>
       <button

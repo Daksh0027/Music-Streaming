@@ -226,7 +226,10 @@ export default function MobileLayout({
             />
             <div className="mmp-info">
               <div className="mmp-title">{currentTrack.title}</div>
-              <div className="mmp-artist">{currentTrack.artist}</div>
+              <div className="mmp-artist" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
+                {currentTrack.artist}
+              </div>
             </div>
             <div className="mmp-controls">
               <button className="mmp-btn" onClick={e => { e.stopPropagation(); onToggleLike(currentTrack.id) }}>
@@ -288,7 +291,10 @@ export default function MobileLayout({
             <div className="mfp-track-info">
               <div className="mfp-track-left">
                 <div className="mfp-track-title">{currentTrack.title}</div>
-                <div className="mfp-track-artist">{currentTrack.artist}</div>
+                <div className="mfp-track-artist" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                  {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
+                  {currentTrack.artist}
+                </div>
               </div>
               <button
                 className="mfp-like-btn"

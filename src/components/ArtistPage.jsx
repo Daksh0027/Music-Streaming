@@ -219,7 +219,17 @@ export default function ArtistPage({
   const verified = artistDetails?.verified ?? true
 
   // Retrieve popular songs
-  const artistTracks = artistDetails?.topSongs || TRACKS_DATA.filter(t => t.artist === activeArtist)
+  const rawArtistTracks = artistDetails?.topSongs || TRACKS_DATA.filter(t => t.artist === activeArtist)
+  const artistTracks = rawArtistTracks.filter((t, idx, arr) => {
+    if (t.explicit) return true;
+    const tTitle = (t.title || '').toLowerCase().trim();
+    const tArtist = (t.artist || '').toLowerCase().trim();
+    return !arr.some(other => 
+      other.explicit && 
+      (other.title || '').toLowerCase().trim() === tTitle && 
+      (other.artist || '').toLowerCase().trim() === tArtist
+    );
+  });
   const isCurrentArtistActive = currentTrack && currentTrack.artist === activeArtist
 
   const handleHeroPlay = () => {
@@ -367,7 +377,6 @@ export default function ArtistPage({
                 <tr>
                   <th className="row-index">#</th>
                   <th>Title</th>
-                  <th style={{ textAlign: 'right', paddingRight: 32 }}>Plays</th>
                   <th className="row-duration" style={{ paddingRight: 16 }}><Clock size={16} /></th>
                 </tr>
               </thead>
@@ -417,38 +426,36 @@ export default function ArtistPage({
                           />
                           <div className="row-track-details">
                             <h4 className={isSelected ? 'active-title' : ''} style={{ margin: 0, fontWeight: 500 }}>
-                              {track.title}
+                               {track.title}
                             </h4>
-                            <p style={{ margin: '2px 0 0 0', display: 'inline-block' }}>
+                            <p style={{ margin: '2px 0 0 0', display: 'inline-flex', alignItems: 'center' }}>
+                              {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                               {renderClickableArtists(track, onClickArtist, 'var(--text-secondary)')}
                             </p>
                           </div>
                         </div>
                       </td>
 
-                      {/* Plays count */}
-                      <td style={{ textAlign: 'right', color: 'var(--text-secondary)', fontSize: 13, paddingRight: 32 }}>
-                        {getTrackPlayCount(track)}
-                      </td>
-
                       {/* Heart, Options, and Duration */}
-                      <td className="row-duration" style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', height: 56, paddingRight: 16 }}>
-                        <div style={{ opacity: isHovered || isSelected ? 1 : 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: 12 }}>
-                          {renderPlaylistDropdown(track)}
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation()
-                              toggleLike(track.id)
-                            }}
-                            style={{ color: isLiked ? '#1db954' : '#b3b3b3' }}
-                            title={isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
-                          >
-                            <Heart size={16} fill={isLiked ? '#1db954' : 'transparent'} />
-                          </button>
+                      <td className="row-duration" style={{ paddingRight: 16 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, height: '100%' }}>
+                          <div style={{ opacity: isHovered || isSelected ? 1 : 0, transition: 'opacity 0.2s', display: 'flex', alignItems: 'center', gap: 12 }}>
+                            {renderPlaylistDropdown(track)}
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                toggleLike(track.id)
+                              }}
+                              style={{ color: isLiked ? '#1db954' : '#b3b3b3', background: 'transparent', border: 'none', cursor: 'pointer', padding: 0 }}
+                              title={isLiked ? 'Remove from Liked Songs' : 'Save to Liked Songs'}
+                            >
+                              <Heart size={16} fill={isLiked ? '#1db954' : 'transparent'} />
+                            </button>
+                          </div>
+                          <span style={{ minWidth: 45, display: 'inline-block', textAlign: 'right', color: 'var(--text-secondary)', fontSize: 13 }}>
+                            {track.duration}
+                          </span>
                         </div>
-                        <span style={{ minWidth: 45, display: 'inline-block', textAlign: 'right', marginLeft: 16, color: 'var(--text-secondary)', fontSize: 13 }}>
-                          {track.duration}
-                        </span>
                       </td>
                     </tr>
                   )

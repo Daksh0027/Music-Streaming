@@ -91,7 +91,8 @@ export default function PlayerBar({
               <div className="pb-title" title={currentTrack.title}>
                 {currentTrack.title}
               </div>
-              <div className="pb-subtitle" title={currentTrack.artist} style={{ display: 'inline-block' }}>
+              <div className="pb-subtitle" title={currentTrack.artist} style={{ display: 'inline-flex', alignItems: 'center' }}>
+                {currentTrack.explicit && <span className="explicit-badge" title="Explicit">E</span>}
                 {(() => {
                   const primary = currentTrack.rawArtists?.primary || []
                   const featured = currentTrack.rawArtists?.featured || []

@@ -131,8 +131,8 @@ export default function TopBar({
                         <img className="search-dropdown-row-img" src={track.coverUrl} alt={track.title} />
                         <div className="search-dropdown-row-details">
                           <div className="search-dropdown-row-title">{track.title}</div>
-                          <div className="search-dropdown-row-subtitle">
-                            Song • {track.artist}
+                          <div className="search-dropdown-row-subtitle" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                            Song • {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}{track.artist}
                           </div>
                         </div>
                         <button 
@@ -161,8 +161,8 @@ export default function TopBar({
                           <img className="search-dropdown-row-img" src={track.coverUrl} alt={track.title} />
                           <div className="search-dropdown-row-details">
                             <div className="search-dropdown-row-title">{track.title}</div>
-                            <div className="search-dropdown-row-subtitle">
-                              Song • {track.artist}
+                            <div className="search-dropdown-row-subtitle" style={{ display: 'inline-flex', alignItems: 'center' }}>
+                              Song • {track.explicit && <span className="explicit-badge" title="Explicit">E</span>}{track.artist}
                             </div>
                           </div>
                         </div>
