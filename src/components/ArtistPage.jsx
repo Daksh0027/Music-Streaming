@@ -63,7 +63,7 @@ const renderClickableArtists = (track, onClickArtist, textSecondaryColor = 'var(
   }
   
   return allArtists.map((artist, idx) => (
-    <React.Fragment key={artist.id || idx}>
+    <React.Fragment key={artist.id ? `${artist.id}_${idx}` : idx}>
       <span 
         onClick={(e) => {
           e.stopPropagation();

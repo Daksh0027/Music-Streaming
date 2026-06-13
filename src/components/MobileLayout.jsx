@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Home, Search, Library, Pause, Play, SkipBack, SkipForward, Heart, Volume2, VolumeX, Music, Plus } from 'lucide-react'
+import React, { useState, useEffect, useRef } from 'react'
+import { Home, Search, Library, Pause, Play, SkipBack, SkipForward, Heart, Volume2, VolumeX, Music, Plus, Share2, Maximize2, ChevronDown, MoreVertical } from 'lucide-react'
 import { SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react'
 import { useUser } from '@clerk/clerk-react'
 import PlaylistDialog from './PlaylistDialog'
@@ -36,11 +36,58 @@ export default function MobileLayout({
   createPlaylist,
   searchQuery,
   setSearchQuery,
+  lyrics = [],
+  isLyricsSynced = false,
+  trackAccentColor = 'rgba(0,0,0,0.8)',
+  isLyricsLoading = false,
   children
 }) {
   const [playerExpanded, setPlayerExpanded] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [showLyricsOnly, setShowLyricsOnly] = useState(false)
   const { user, isSignedIn } = useUser()
+
+  const cardScrollContainerRef = useRef(null)
+  const fullScrollContainerRef = useRef(null)
+
+  // Find active line index and text
+  const activeLineIdx = isLyricsSynced ? lyrics.findIndex((line, idx) => {
+    return currentTime >= line.time && (idx === lyrics.length - 1 || currentTime < lyrics[idx + 1].time);
+  }) : -1;
+
+  const activeLyricText = activeLineIdx !== -1 && lyrics[activeLineIdx] ? lyrics[activeLineIdx].text : '';
+
+  // Auto-scroll lyrics containers smoothly to center active line without shifting page viewports
+  useEffect(() => {
+    if (activeLineIdx !== -1 && isLyricsSynced) {
+      if (playerExpanded && !showLyricsOnly && cardScrollContainerRef.current) {
+        const container = cardScrollContainerRef.current;
+        const activeEl = container.children[activeLineIdx];
+        if (activeEl) {
+          const containerHeight = container.clientHeight;
+          const elOffsetTop = activeEl.offsetTop;
+          const elHeight = activeEl.clientHeight;
+          container.scrollTo({
+            top: elOffsetTop - (containerHeight / 2) + (elHeight / 2),
+            behavior: 'smooth'
+          });
+        }
+      }
+      if (showLyricsOnly && fullScrollContainerRef.current) {
+        const container = fullScrollContainerRef.current;
+        const activeEl = container.children[activeLineIdx];
+        if (activeEl) {
+          const containerHeight = container.clientHeight;
+          const elOffsetTop = activeEl.offsetTop;
+          const elHeight = activeEl.clientHeight;
+          container.scrollTo({
+            top: elOffsetTop - (containerHeight / 2) + (elHeight / 2),
+            behavior: 'smooth'
+          });
+        }
+      }
+    }
+  }, [activeLineIdx, playerExpanded, showLyricsOnly, isLyricsSynced])
 
   const isLiked = currentTrack ? likedTrackIds.includes(currentTrack.id) : false
 
@@ -267,7 +314,7 @@ export default function MobileLayout({
           />
           <div className="mfp-overlay" />
 
-          <div className="mfp-content">
+          <div className="mfp-content no-scrollbar" style={{ overflowY: 'auto', flex: 1 }}>
             {/* Header */}
             <div className="mfp-header">
               <button className="mfp-close" onClick={() => setPlayerExpanded(false)}>
@@ -286,6 +333,13 @@ export default function MobileLayout({
                 style={{ backgroundImage: `url(${currentTrack.coverUrl})` }}
               />
             </div>
+
+            {/* Active Lyric Line Preview (above title) */}
+            {activeLyricText && (
+              <div style={{ padding: '0 4px', marginBottom: 12, fontSize: 16, fontWeight: 700, color: '#fff', opacity: 0.9, textAlign: 'left', lineHeight: '1.4', animation: 'pdialog-fade-in 0.2s', textShadow: '0 2px 4px rgba(0,0,0,0.5)' }}>
+                {activeLyricText}
+              </div>
+            )}
 
             {/* Track info */}
             <div className="mfp-track-info">
@@ -373,6 +427,271 @@ export default function MobileLayout({
               />
               <Volume2 size={18} style={{ color: '#b3b3b3' }} />
             </div>
+
+            {/* Spotify-style scrolling lyrics card */}
+            <div 
+              className="mfp-lyrics-preview-card"
+              style={{
+                marginTop: 24,
+                marginBottom: 16,
+                background: `linear-gradient(180deg, ${trackAccentColor || '#1c3d5a'} 0%, rgba(0,0,0,0.65) 100%)`,
+                borderRadius: 16,
+                padding: 20,
+                border: '1px solid rgba(255,255,255,0.08)',
+                minHeight: 280,
+                maxHeight: 320,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 16
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>Lyrics</span>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      if (navigator.share) {
+                        navigator.share({
+                          title: currentTrack.title,
+                          text: `Listening to ${currentTrack.title} by ${currentTrack.artist}`,
+                          url: window.location.href,
+                        }).catch(console.error);
+                      } else {
+                        alert("Sharing is not supported on this browser.");
+                      }
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.12)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Share2 size={15} />
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowLyricsOnly(true);
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.12)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 32,
+                      height: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#fff',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Maximize2 size={15} />
+                  </button>
+                </div>
+              </div>
+              
+              <div 
+                ref={cardScrollContainerRef}
+                className="no-scrollbar"
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 16,
+                  paddingBottom: 20
+                }}
+              >
+                {isLyricsLoading ? (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+                    Loading lyrics...
+                  </div>
+                ) : lyrics && lyrics.length > 0 ? (
+                  lyrics.map((line, idx) => {
+                    const isLineActive = idx === activeLineIdx;
+                    return (
+                      <p
+                        key={idx}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isLyricsSynced) onScrub(line.time);
+                        }}
+                        style={{
+                          fontSize: '18px',
+                          fontWeight: 800,
+                          lineHeight: '1.4',
+                          margin: 0,
+                          color: isLineActive 
+                            ? '#ffffff' 
+                            : isLyricsSynced 
+                              ? 'rgba(255, 255, 255, 0.45)' 
+                              : 'rgba(255, 255, 255, 0.85)',
+                          cursor: isLyricsSynced ? 'pointer' : 'default',
+                          transition: 'color 0.2s ease',
+                          textAlign: 'left'
+                        }}
+                      >
+                        {line.text}
+                      </p>
+                    );
+                  })
+                ) : (
+                  <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>
+                    No lyrics available for this song.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Full-Screen Lyrics Overlay */}
+      {showLyricsOnly && currentTrack && (
+        <div 
+          className="mobile-full-lyrics"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 1000,
+            background: `linear-gradient(135deg, ${trackAccentColor || '#333'} 0%, rgba(0,0,0,0.95) 100%)`,
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '24px 20px',
+            paddingTop: 'env(safe-area-inset-top, 24px)',
+            paddingBottom: 'env(safe-area-inset-bottom, 24px)',
+            animation: 'pdialog-fade-in 0.2s ease-out'
+          }}
+        >
+          {/* Header */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+            <button 
+              onClick={() => setShowLyricsOnly(false)}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 4 }}
+            >
+              <ChevronDown size={28} />
+            </button>
+            <div style={{ flex: 1, textAlign: 'center', margin: '0 12px', minWidth: 0 }}>
+              <div style={{ fontSize: 14, fontWeight: 700, color: '#fff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{currentTrack.title}</div>
+              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{currentTrack.artist}</div>
+            </div>
+            <div style={{ width: 28 }} />
+          </div>
+
+          {/* Lyrics Body */}
+          <div 
+            ref={fullScrollContainerRef}
+            className="mobile-lyrics-scroll no-scrollbar"
+            style={{
+              flex: 1,
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+              paddingBottom: 40
+            }}
+          >
+            {lyrics && lyrics.length > 0 ? (
+              lyrics.map((line, idx) => {
+                const isLineActive = idx === activeLineIdx;
+                return (
+                  <p
+                    key={idx}
+                    onClick={() => {
+                      if (isLyricsSynced) onScrub(line.time);
+                    }}
+                    style={{
+                      fontSize: isLineActive ? '22px' : '20px',
+                      fontWeight: 800,
+                      lineHeight: '1.4',
+                      margin: 0,
+                      color: isLineActive 
+                        ? '#ffffff' 
+                        : isLyricsSynced 
+                          ? 'rgba(255, 255, 255, 0.45)' 
+                          : 'rgba(255, 255, 255, 0.85)',
+                      cursor: isLyricsSynced ? 'pointer' : 'default',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left'
+                    }}
+                  >
+                    {line.text}
+                  </p>
+                );
+              })
+            ) : (
+              <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 15 }}>
+                {isLyricsLoading ? "Loading lyrics..." : "No lyrics available for this song."}
+              </div>
+            )}
+          </div>
+
+          {/* Progress scrubber */}
+          <div className="mfp-progress-section" style={{ margin: '16px 0 12px 0' }}>
+            <div className="mfp-scrub-bar" onClick={handleScrubClick}>
+              <div className="mfp-scrub-fill" style={{ width: `${progressPercent}%` }}>
+                <div className="mfp-scrub-handle" />
+              </div>
+            </div>
+            <div className="mfp-times" style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'rgba(255,255,255,0.6)' }}>
+              <span>{formatTime(currentTime)}</span>
+              <span>{formatTime(duration)}</span>
+            </div>
+          </div>
+
+          {/* Bottom Controls Bar */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 8, padding: '0 8px', marginBottom: 8 }}>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (navigator.share) {
+                  navigator.share({
+                    title: currentTrack.title,
+                    text: `Listening to ${currentTrack.title} by ${currentTrack.artist}`,
+                    url: window.location.href,
+                  }).catch(console.error);
+                } else {
+                  alert("Sharing is not supported on this browser.");
+                }
+              }}
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}
+            >
+              <Share2 size={22} />
+            </button>
+
+            <button 
+              onClick={onPlayPause}
+              style={{
+                width: 56,
+                height: 56,
+                borderRadius: '50%',
+                background: '#fff',
+                border: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#000',
+                cursor: 'pointer',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)'
+              }}
+            >
+              {isPlaying ? <Pause size={24} fill="#000" /> : <Play size={24} fill="#000" style={{ marginLeft: 3 }} />}
+            </button>
+
+            <button
+              style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 8 }}
+            >
+              <MoreVertical size={22} />
+            </button>
           </div>
         </div>
       )}

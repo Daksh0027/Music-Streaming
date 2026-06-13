@@ -1512,6 +1512,10 @@ export default function App() {
         createPlaylist={createPlaylist}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
+        lyrics={lyrics}
+        isLyricsSynced={isLyricsSynced}
+        trackAccentColor={trackAccentColor}
+        isLyricsLoading={isLyricsLoading}
       >
         <MainContent {...mainContentProps} />
       </MobileLayout>

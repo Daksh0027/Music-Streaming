@@ -116,7 +116,7 @@ export default function PlayerBar({
                   }
                   
                   return allArtists.map((artist, idx) => (
-                    <React.Fragment key={artist.id || idx}>
+                    <React.Fragment key={artist.id ? `${artist.id}_${idx}` : idx}>
                       <span 
                         onClick={() => onClickArtist && onClickArtist(artist.id, artist.name)}
                         style={{ cursor: 'pointer', transition: 'color 0.2s' }}
