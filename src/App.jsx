@@ -5,6 +5,7 @@ import MainContent from './components/MainContent'
 import RightSidebar from './components/RightSidebar'
 import PlayerBar from './components/PlayerBar'
 import MobileLayout from './components/MobileLayout'
+import FullscreenPlayer from './components/FullscreenPlayer'
 
 import { TRACKS_DATA } from './tracks'
 import { supabase } from './lib/supabase'
@@ -74,10 +75,10 @@ export default function App() {
   const { user, isSignedIn } = useUser()
 
   // Constants
-  const API_BASE = 'https://jiosaavn-api.daksh-api.workers.dev'
+  const API_BASE = 'https://jiosavan-api2.vercel.app'
   const BACKEND_BASE = import.meta.env.DEV ? '' : 'https://music-streaming-m41v.onrender.com'
 
-  // Standard Mapper Utility inside App
+  // Standard Mapper: JioSaavn API song → internal track object
   const mapApiSongToTrack = (song) => {
     if (!song) return null
     const images = song.image || []
@@ -112,6 +113,35 @@ export default function App() {
       hasLyrics: song.hasLyrics || false,
       lyricsId: song.lyricsId || null,
       rawArtists: song.artists
+    }
+  }
+
+  // Mapper: iTunes Search API result → internal track object (kept as fallback)
+  const mapItunesSongToTrack = (song) => {
+    if (!song || song.kind !== 'song') return null
+    const durationMs = song.trackTimeMillis || 0
+    const durationSec = Math.floor(durationMs / 1000)
+    const mins = Math.floor(durationSec / 60)
+    const secs = durationSec % 60
+    const coverUrl = (song.artworkUrl100 || '').replace('100x100bb', '600x600bb') ||
+                     song.artworkUrl60 ||
+                     'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=400'
+    return {
+      id: `itunes_${song.trackId}`,
+      itunesId: song.trackId,
+      title: song.trackName,
+      artist: song.artistName,
+      album: song.collectionName || 'Single',
+      albumId: null,
+      duration: `${mins}:${secs < 10 ? '0' : ''}${secs}`,
+      durationSec: durationSec,
+      audioUrl: song.previewUrl || '',
+      coverUrl: coverUrl,
+      plays: '—',
+      hasLyrics: false,
+      lyricsId: null,
+      rawArtists: null,
+      isPreviewOnly: true
     }
   }
 
@@ -161,7 +191,7 @@ export default function App() {
   // Liked Tracks States
   const [likedTrackIds, setLikedTrackIds] = useState([])
   const [likedTracks, setLikedTracks] = useState([])
-  const isRightSidebarOpen = true
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true)
 
   // Supabase Custom Playlists States
   const [playlists, setPlaylists] = useState([])
@@ -174,6 +204,24 @@ export default function App() {
   const [isAlbumLoading, setIsAlbumLoading] = useState(false)
   const [userQueue, setUserQueue] = useState([])
   const [rightSidebarTab, setRightSidebarTab] = useState('nowplaying') // 'nowplaying' or 'queue'
+  const [isFullscreenPlayerOpen, setIsFullscreenPlayerOpen] = useState(false)
+  const [followedArtists, setFollowedArtists] = useState([])
+
+  // Fullscreen change listener to sync HTML5 fullscreen with custom player state
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      const isHtml5Fullscreen = !!document.fullscreenElement
+      if (!isHtml5Fullscreen && isFullscreenPlayerOpen) {
+        setIsFullscreenPlayerOpen(false)
+        document.body.classList.remove('fullscreen-active')
+      }
+    }
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange)
+    }
+  }, [isFullscreenPlayerOpen])
 
   // Fetch Liked Tracks and Playlists from Supabase on Sign-In
   useEffect(() => {
@@ -182,6 +230,7 @@ export default function App() {
         setLikedTrackIds([])
         setLikedTracks([])
         setPlaylists([])
+        setFollowedArtists([])
         return
       }
 
@@ -218,6 +267,29 @@ export default function App() {
         }
       } catch (err) {
         console.error("[Supabase Exception] Error loading playlists:", err);
+      }
+
+      // 3. Fetch Followed Artists (Isolated Try/Catch)
+      try {
+        const { data: followedData, error: followedError } = await supabase
+          .from('followed_artists')
+          .select('*')
+          .eq('user_id', user.id)
+
+        if (followedError) {
+          console.error("[Supabase Error] Failed loading followed artists:", followedError.message, followedError.details, followedError.code);
+        } else if (followedData) {
+          const formatted = followedData.map(item => ({
+            id: item.artist_id,
+            name: item.artist_name,
+            image: item.artist_metadata?.image || '',
+            listeners: item.artist_metadata?.listeners || '',
+            bio: item.artist_metadata?.bio || ''
+          }))
+          setFollowedArtists(formatted)
+        }
+      } catch (err) {
+        console.error("[Supabase Exception] Error loading followed artists:", err);
       }
     }
 
@@ -280,16 +352,16 @@ export default function App() {
     setIsSearching(true)
     const delayDebounce = setTimeout(async () => {
       try {
-        const res = await fetch(`${API_BASE}/api/search/songs?query=${encodeURIComponent(searchQuery)}&limit=15`)
+        const res = await fetch(`${API_BASE}/api/search/songs?query=${encodeURIComponent(searchQuery)}&limit=20`)
         const json = await res.json()
         const tracks = (json.data?.results || []).map(mapApiSongToTrack).filter(Boolean)
         setSearchResults(tracks)
       } catch (err) {
-        console.error("Failed searching songs live:", err)
+        console.error('Failed searching songs live:', err)
       } finally {
         setIsSearching(false)
       }
-    }, 450) // Premium 450ms debounce rate
+    }, 450)
 
     return () => clearTimeout(delayDebounce)
   }, [searchQuery])
@@ -628,59 +700,76 @@ export default function App() {
 
     try {
       let resolvedId = artistId
+      let searchArtistData = null // Store search result for image/name fallback
 
-      // If we don't have an ID (e.g. from static mock files or missing mapping), resolve it by search first
+      // If we don't have an ID, resolve via the correct search endpoint
       if (!resolvedId && artistName) {
-        const searchRes = await fetch(`${API_BASE}/api/search/artists?query=${encodeURIComponent(artistName)}&limit=1`)
+        const searchRes = await fetch(`${API_BASE}/api/search/artists?query=${encodeURIComponent(artistName)}&page=0&limit=5`)
         const searchJson = await searchRes.json()
-        resolvedId = searchJson.data?.results?.[0]?.id
+        const match = searchJson.data?.results?.[0]
+        resolvedId = match?.id
+        searchArtistData = match
       }
 
       if (!resolvedId) {
-        // Safe UI fallback
         setArtistDetails({
           name: artistName || 'Unknown Artist',
           banner: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200',
           listeners: '10,489,122 monthly listeners',
-          bio: `${artistName} is a popular artist featured on JioSaavn. Check back soon for full biography updates!`,
+          bio: `${artistName} is a popular artist. Check back soon for full biography updates!`,
           verified: true,
-          topSongs: fallbackQueue.slice(0, 6),
+          topSongs: [],
           topAlbums: [],
           singles: []
         })
         return
       }
 
-      // Fetch official artist detail card (retrieve up to 10 top popular songs)
-      const res = await fetch(`${API_BASE}/api/artists?id=${resolvedId}&songCount=10`)
-      const json = await res.json()
-      const data = json.data
+      // Fetch artist details AND top songs in parallel
+      const [artistRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/api/artists?id=${resolvedId}&songCount=20&albumCount=20`).then(r => r.json())
+      ])
 
-      if (data) {
-        const images = data.image || []
-        const bannerImg = images.find(img => img.quality === '500x500')?.url || 
-                          images[images.length - 1]?.url || 
-                          'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200'
+      const data = artistRes.status === 'fulfilled' ? artistRes.value?.data : null
 
-        const fans = data.fanCount ? parseInt(data.fanCount).toLocaleString() : 
-                     data.followerCount ? parseInt(data.followerCount).toLocaleString() : '8,450,290'
-
-        const artistBio = data.bio?.[0]?.text || `${data.name} is a renowned artist with multiple hit albums streaming globally.`
-
-        const topSongs = (data.topSongs || []).map(mapApiSongToTrack).filter(Boolean)
-
-        setArtistDetails({
-          id: resolvedId,
-          name: data.name,
-          banner: bannerImg,
-          listeners: `${fans} monthly listeners`,
-          bio: artistBio,
-          verified: data.isVerified ?? true,
-          topSongs: topSongs,
-          topAlbums: data.topAlbums || [],
-          singles: data.singles || []
-        })
+      // Get banner image: prefer artist details → search result image → Unsplash fallback
+      let bannerImg = 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200'
+      if (data?.image?.length) {
+        bannerImg = data.image.find(img => img.quality === '500x500')?.url || data.image[data.image.length - 1]?.url || bannerImg
+      } else if (searchArtistData?.image?.length) {
+        bannerImg = searchArtistData.image.find(img => img.quality === '500x500')?.url || searchArtistData.image[searchArtistData.image.length - 1]?.url || bannerImg
       }
+
+      const displayName = data?.name || artistName || 'Unknown Artist'
+      const fans = data?.fanCount ? parseInt(data.fanCount).toLocaleString() : 
+                   data?.followerCount ? parseInt(data.followerCount).toLocaleString() : null
+      const listenersText = fans ? `${fans} monthly listeners` : 'Streaming on JioSaavn'
+      const artistBio = data?.bio?.[0]?.text || `${displayName} is a renowned artist with multiple hit albums streaming globally.`
+
+      const topSongs = (data?.topSongs || []).map(mapApiSongToTrack).filter(Boolean)
+
+      // Split topAlbums into albums vs singles/EPs by songCount
+      const allReleases = data?.topAlbums || []
+      const topAlbums = allReleases.filter(release => {
+        const count = parseInt(release.songCount || release.song_count || release.songs_count || 0)
+        return count > 3
+      })
+      const singles = allReleases.filter(release => {
+        const count = parseInt(release.songCount || release.song_count || release.songs_count || 0)
+        return count <= 3
+      })
+
+      setArtistDetails({
+        id: resolvedId,
+        name: displayName,
+        banner: bannerImg,
+        listeners: listenersText,
+        bio: artistBio,
+        verified: data?.isVerified ?? true,
+        topSongs,
+        topAlbums,
+        singles
+      })
     } catch (err) {
       console.error("Failed to load artist details dynamically:", err)
     } finally {
@@ -710,46 +799,55 @@ export default function App() {
       hlsRef.current = null
     }
 
-    const hash = getHash(currentTrack.audioUrl)
-    const playlistUrl = `${BACKEND_BASE}/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}&_t=${Date.now()}`
+    // iTunes preview URLs are plain .m4a files — play them directly, no HLS proxy needed
+    const isItunesUrl = currentTrack.audioUrl?.includes('itunes.apple.com') || 
+                        currentTrack.audioUrl?.includes('audio-ssl.itunes.apple.com')
 
-    if (Hls.isSupported()) {
-      const hls = new Hls()
-      hls.loadSource(playlistUrl)
-      hls.attachMedia(audioRef.current)
-      hlsRef.current = hls
-
-      hls.on(Hls.Events.ERROR, (event, data) => {
-        if (data.fatal) {
-          switch (data.type) {
-            case Hls.ErrorTypes.NETWORK_ERROR:
-              console.warn("Fatal HLS network error, attempting recovery...")
-              hls.startLoad()
-              break
-            case Hls.ErrorTypes.MEDIA_ERROR:
-              console.warn("Fatal HLS media error, attempting recovery...")
-              hls.recoverMediaError()
-              break
-            default:
-              console.error("Fatal HLS error, destroying instance:", data)
-              hls.destroy()
-              break
-          }
-        }
-      })
-    } else if (audioRef.current.canPlayType('application/vnd.apple.mpegurl')) {
-      // Native Safari HLS
-      audioRef.current.src = playlistUrl
+    if (isItunesUrl) {
+      audioRef.current.src = currentTrack.audioUrl
       audioRef.current.load()
     } else {
-      // Direct progressive stream proxy fallback
-      try {
-        const urlObj = new URL(currentTrack.audioUrl)
-        audioRef.current.src = `${BACKEND_BASE}/stream/${urlObj.hostname}${urlObj.pathname}${urlObj.search}`
-      } catch (err) {
-        audioRef.current.src = currentTrack.audioUrl
+      const hash = getHash(currentTrack.audioUrl)
+      const playlistUrl = `${BACKEND_BASE}/hls/${hash}/playlist.m3u8?url=${encodeURIComponent(currentTrack.audioUrl)}&duration=${currentTrack.durationSec || 180}&_t=${Date.now()}`
+
+      if (Hls.isSupported()) {
+        const hls = new Hls()
+        hls.loadSource(playlistUrl)
+        hls.attachMedia(audioRef.current)
+        hlsRef.current = hls
+
+        hls.on(Hls.Events.ERROR, (event, data) => {
+          if (data.fatal) {
+            switch (data.type) {
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn("Fatal HLS network error, attempting recovery...")
+                hls.startLoad()
+                break
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn("Fatal HLS media error, attempting recovery...")
+                hls.recoverMediaError()
+                break
+              default:
+                console.error("Fatal HLS error, destroying instance:", data)
+                hls.destroy()
+                break
+            }
+          }
+        })
+      } else if (audioRef.current.canPlayType('application/vnd.apple.mpegurl')) {
+        // Native Safari HLS
+        audioRef.current.src = playlistUrl
+        audioRef.current.load()
+      } else {
+        // Direct progressive stream proxy fallback
+        try {
+          const urlObj = new URL(currentTrack.audioUrl)
+          audioRef.current.src = `${BACKEND_BASE}/stream/${urlObj.hostname}${urlObj.pathname}${urlObj.search}`
+        } catch (err) {
+          audioRef.current.src = currentTrack.audioUrl
+        }
+        audioRef.current.load()
       }
-      audioRef.current.load()
     }
 
     audioRef.current.currentTime = 0
@@ -885,6 +983,14 @@ export default function App() {
     }
   }
 
+  const handleLyricsClick = () => {
+    if (activeTab === 'lyrics') {
+      navigateBack()
+    } else {
+      navigateTo('lyrics')
+    }
+  }
+
   // Play Queue Control Helpers
   const addToQueue = (track) => {
     setUserQueue((prev) => [...prev, track])
@@ -904,7 +1010,7 @@ export default function App() {
   }
 
   const handleToggleRightSidebar = () => {
-    if (rightSidebarTab === 'nowplaying') {
+    if (isRightSidebarOpen && rightSidebarTab === 'nowplaying') {
       setIsRightSidebarOpen(false)
     } else {
       setIsRightSidebarOpen(true)
@@ -913,7 +1019,7 @@ export default function App() {
   }
 
   const handleQueueClick = () => {
-    if (rightSidebarTab === 'queue') {
+    if (isRightSidebarOpen && rightSidebarTab === 'queue') {
       setIsRightSidebarOpen(false)
     } else {
       setIsRightSidebarOpen(true)
@@ -922,12 +1028,83 @@ export default function App() {
   }
 
   const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch((err) => {
-        console.error(`Error attempting to enable fullscreen: ${err.message}`);
-      });
+    const nextState = !isFullscreenPlayerOpen
+    setIsFullscreenPlayerOpen(nextState)
+    if (nextState) {
+      document.body.classList.add('fullscreen-active')
+      if (document.documentElement.requestFullscreen) {
+        document.documentElement.requestFullscreen().catch((err) => {
+          console.warn(`Error attempting to enable fullscreen: ${err.message}`);
+        });
+      }
     } else {
-      document.exitFullscreen();
+      document.body.classList.remove('fullscreen-active')
+      if (document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch((err) => {
+          console.warn(`Error attempting to exit fullscreen: ${err.message}`);
+        });
+      }
+    }
+  }
+
+  const toggleFollowArtist = async (artistInfo) => {
+    if (!artistInfo || !artistInfo.name) return
+
+    // Dynamic Artist ID: JioSaavn API ID or local-slugified name
+    const artistId = artistInfo.id || `local-${artistInfo.name.toLowerCase().replace(/\s+/g, '-')}`
+    const isAlreadyFollowing = followedArtists.some(
+      (a) => a.id === artistId || a.name.toLowerCase() === artistInfo.name.toLowerCase()
+    )
+
+    let updatedFollowed
+    if (isAlreadyFollowing) {
+      updatedFollowed = followedArtists.filter(
+        (a) => a.id !== artistId && a.name.toLowerCase() !== artistInfo.name.toLowerCase()
+      )
+    } else {
+      updatedFollowed = [
+        ...followedArtists,
+        {
+          id: artistId,
+          name: artistInfo.name,
+          image: artistInfo.banner || artistInfo.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300',
+          listeners: artistInfo.listeners || '425,189 monthly listeners',
+          bio: artistInfo.bio || ''
+        }
+      ]
+    }
+
+    setFollowedArtists(updatedFollowed)
+
+    // Sync with Supabase if logged in
+    if (isSignedIn && user) {
+      try {
+        if (isAlreadyFollowing) {
+          const { error } = await supabase
+            .from('followed_artists')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('artist_id', artistId)
+          if (error) throw error
+        } else {
+          const newFollowRecord = {
+            user_id: user.id,
+            artist_id: artistId,
+            artist_name: artistInfo.name,
+            artist_metadata: {
+              image: artistInfo.banner || artistInfo.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300',
+              listeners: artistInfo.listeners || '425,189 monthly listeners',
+              bio: artistInfo.bio || ''
+            }
+          }
+          const { error } = await supabase
+            .from('followed_artists')
+            .insert(newFollowRecord)
+          if (error) throw error
+        }
+      } catch (err) {
+        console.error("Failed to sync followed artist with Supabase:", err)
+      }
     }
   }
 
@@ -1206,7 +1383,9 @@ export default function App() {
     createPlaylist,
     deletePlaylist,
     addTrackToPlaylist,
-    removeTrackFromPlaylist
+    removeTrackFromPlaylist,
+    followedArtists,
+    toggleFollowArtist
   }
 
   if (isMobile) {
@@ -1255,32 +1434,35 @@ export default function App() {
           onClickArtist={onClickArtist}
           playlists={playlists}
           createPlaylist={createPlaylist}
+          followedArtists={followedArtists}
         />
         <MainContent {...mainContentProps} />
-        <RightSidebar 
-          currentTrack={currentTrack}
-          isPlaying={isPlaying}
-          currentTime={currentTime}
-          onClose={() => {}}
-          likedTrackIds={likedTrackIds}
-          toggleLike={toggleLike}
-          recommendations={recommendations}
-          playSong={playSong}
-          lyrics={lyrics}
-          isLyricsLoading={isLyricsLoading}
-          isLyricsSynced={isLyricsSynced}
-          onScrub={handleScrub}
-          trackAccentColor={trackAccentColor}
-          playlists={playlists}
-          addTrackToPlaylist={addTrackToPlaylist}
-          onClickArtist={onClickArtist}
-          addToQueue={addToQueue}
-          rightSidebarTab={rightSidebarTab}
-          userQueue={userQueue}
-          removeFromQueue={removeFromQueue}
-          clearQueue={clearQueue}
-          activeQueue={activeQueue}
-        />
+        {isRightSidebarOpen && (
+          <RightSidebar 
+            currentTrack={currentTrack}
+            isPlaying={isPlaying}
+            currentTime={currentTime}
+            onClose={() => setIsRightSidebarOpen(false)}
+            likedTrackIds={likedTrackIds}
+            toggleLike={toggleLike}
+            recommendations={recommendations}
+            playSong={playSong}
+            lyrics={lyrics}
+            isLyricsLoading={isLyricsLoading}
+            isLyricsSynced={isLyricsSynced}
+            onScrub={handleScrub}
+            trackAccentColor={trackAccentColor}
+            playlists={playlists}
+            addTrackToPlaylist={addTrackToPlaylist}
+            onClickArtist={onClickArtist}
+            addToQueue={addToQueue}
+            rightSidebarTab={rightSidebarTab}
+            userQueue={userQueue}
+            removeFromQueue={removeFromQueue}
+            clearQueue={clearQueue}
+            activeQueue={activeQueue}
+          />
+        )}
       </div>
       <PlayerBar 
         currentTrack={currentTrack}
@@ -1303,11 +1485,23 @@ export default function App() {
         onToggleRepeat={() => setRepeat(!repeat)}
         onToggleLike={toggleLike}
         onToggleRightSidebar={handleToggleRightSidebar}
-        onLyricsClick={() => navigateTo('lyrics')}
+        isLyricsActive={activeTab === 'lyrics'}
+        onLyricsClick={handleLyricsClick}
         onQueueClick={handleQueueClick}
         onFullscreenClick={toggleFullscreen}
         onClickArtist={onClickArtist}
       />
+      {isFullscreenPlayerOpen && (
+        <FullscreenPlayer 
+          currentTrack={currentTrack}
+          isPlaying={isPlaying}
+          currentTime={currentTime}
+          duration={duration}
+          trackAccentColor={trackAccentColor}
+          onClose={toggleFullscreen}
+          onClickArtist={onClickArtist}
+        />
+      )}
     </div>
   )
 }

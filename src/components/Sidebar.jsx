@@ -12,7 +12,8 @@ export default function Sidebar({
   isPlaying,
   onClickArtist,
   playlists = [],
-  createPlaylist
+  createPlaylist,
+  followedArtists = []
 }) {
   const [filter, setFilter] = useState('All')
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -38,6 +39,15 @@ export default function Sidebar({
       customIcon: <Music size={20} style={{ color: '#b3b3b3' }} />,
       gradient: 'rgba(255,255,255,0.05)',
       onClick: () => navigateTo(`playlist-${pl.id}`)
+    })),
+    ...followedArtists.map(art => ({
+      id: `artist-${art.id}`,
+      title: art.name,
+      type: 'Artist',
+      creator: 'Artist',
+      img: art.image || 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?q=80&w=300',
+      gradient: 'rgba(255,255,255,0.05)',
+      onClick: () => onClickArtist(art.id, art.name)
     }))
   ]
 
@@ -57,27 +67,6 @@ export default function Sidebar({
       />
 
       <aside className="sidebar">
-        <div className="nav-links">
-          <div 
-            className={`nav-item ${activeTab === 'home' ? 'active' : ''}`}
-            onClick={() => navigateTo('home')}
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M12.5 3.247a1 1 0 0 0-1 0L4 7.577V20h4.5v-6a1 1 0 0 1 1-1h5a1 1 0 0 1 1 1v6H20V7.577l-7.5-4.33zM10.5 2.381a3 3 0 0 1 3 0l7.5 4.33A3 3 0 0 1 22 9.302V20a2 2 0 0 1-2 2h-4.5a2 2 0 0 1-2-2v-5h-3v5a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V9.302a3 3 0 0 1 1.5-2.59l7.5-4.33z"/>
-            </svg>
-            Home
-          </div>
-          <div 
-            className={`nav-item ${activeTab === 'search' ? 'active' : ''}`}
-            onClick={() => navigateTo('search')}
-          >
-            <svg viewBox="0 0 24 24" fill="currentColor">
-              <path d="M10.533 1.277c-5.18 0-9.42 4.24-9.42 9.42s4.24 9.42 9.42 9.42c2.19 0 4.2-.75 5.8-2.006l4.7 4.7a1 1 0 0 0 1.413-1.412l-4.7-4.7c1.26-1.6 2.007-3.61 2.007-5.8 0-5.18-4.24-9.42-9.42-9.42zm-7.42 9.42c0-4.08 3.34-7.42 7.42-7.42 4.08 0 7.42 3.34 7.42 7.42s-3.34 7.42-7.42 7.42c-4.08 0-7.42-3.34-7.42-7.42z"/>
-            </svg>
-            Search
-          </div>
-        </div>
-
         <div className="library-section">
           <div className="lib-header">
             <button className="lib-btn" onClick={() => navigateTo('home')}>

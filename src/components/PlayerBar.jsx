@@ -46,6 +46,7 @@ export default function PlayerBar({
   onToggleRepeat,
   onToggleLike,
   onToggleRightSidebar,
+  isLyricsActive,
   onLyricsClick,
   onQueueClick,
   onFullscreenClick,
@@ -187,7 +188,7 @@ export default function PlayerBar({
 
       {/* Right side: Auxiliary widgets & volume controller */}
       <div className="pb-right">
-        <button className="ctrl-btn" title="Lyrics" onClick={onLyricsClick}><Mic2 size={16} /></button>
+        <button className={`ctrl-btn ${isLyricsActive ? 'active' : ''}`} title="Lyrics" onClick={onLyricsClick}><Mic2 size={16} /></button>
         <button 
           className={`ctrl-btn ${isRightSidebarOpen && rightSidebarTab === 'queue' ? 'active' : ''}`} 
           title="Queue" 
@@ -195,7 +196,7 @@ export default function PlayerBar({
         >
           <ListMusic size={16} />
         </button>
-        <button className="ctrl-btn" title="Fullscreen" onClick={onFullscreenClick}><Laptop2 size={16} /></button>
+        <button className="ctrl-btn" title="Connect to a device"><Laptop2 size={16} /></button>
         
         <div className="vol-bar">
           <button 
