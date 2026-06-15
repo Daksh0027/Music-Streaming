@@ -15,7 +15,7 @@ import {
 } from 'lucide-react'
 
 // Dynamic API base URL
-const API_BASE = 'https://jiosavan-api2.vercel.app'
+const API_BASE = 'https://api-umber-five-69.vercel.app'
 
 // Fallback details for popular local artists
 const ARTIST_FALLBACK_PROFILES = {

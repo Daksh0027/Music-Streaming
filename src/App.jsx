@@ -75,7 +75,7 @@ export default function App() {
   const { user, isSignedIn } = useUser()
 
   // Constants
-  const API_BASE = 'https://jiosavan-api2.vercel.app'
+  const API_BASE = 'https://api-umber-five-69.vercel.app'
   const BACKEND_BASE = import.meta.env.DEV ? '' : 'https://music-streaming-m41v.onrender.com'
 
   // Standard Mapper: JioSaavn API song → internal track object

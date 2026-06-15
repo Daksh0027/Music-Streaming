@@ -309,7 +309,7 @@ export default function MainContent({
         setIsSysPlaylistLoading(true)
         setSysPlaylistTracks([])
         console.log(`[System Playlist] Fetching tracks for ID: ${playlistInfo.jiosaavnPlaylistId}`)
-        fetch(`https://jiosaavn-api.daksh-api.workers.dev/api/playlists?id=${playlistInfo.jiosaavnPlaylistId}`)
+        fetch(`https://api-umber-five-69.vercel.app/api/playlists?id=${playlistInfo.jiosaavnPlaylistId}`)
           .then(res => res.json())
           .then(json => {
             const tracks = (json.data?.songs || []).map(mapApiSongToTrack).filter(Boolean)
@@ -455,7 +455,7 @@ export default function MainContent({
     const playlistInfo = SYSTEM_PLAYLISTS[type]
     if (playlistInfo) {
       try {
-        const r = await fetch(`https://jiosaavn-api.daksh-api.workers.dev/api/playlists?id=${playlistInfo.jiosaavnPlaylistId}`)
+        const r = await fetch(`https://api-umber-five-69.vercel.app/api/playlists?id=${playlistInfo.jiosaavnPlaylistId}`)
         const json = await r.json()
         const tracks = (json.data?.songs || []).map(mapApiSongToTrack).filter(Boolean)
         if (tracks.length > 0) {
